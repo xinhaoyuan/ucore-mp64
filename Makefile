@@ -6,6 +6,7 @@ export T_BIN    ?= ${PWD}/bin
 export MAKE     := make -s
 
 all:
+	-@mkdir bin
 	${V}${MAKE} -f mk/mods.mk all
 	${V}${MAKE} -f mk/image.mk all
 
