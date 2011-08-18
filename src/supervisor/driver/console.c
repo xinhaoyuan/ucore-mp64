@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <kbdreg.h>
+#include <picirq.h>
+#include <trap.h>
+#include <memlayout.h>
+#include <sync.h>
 
 /* stupid I/O delay routine necessitated by historical PC design flaws */
 static void
@@ -54,11 +58,11 @@ static uint16_t addr_6845;
 
 static void
 cga_init(void) {
-    volatile uint16_t *cp = (uint16_t *)CGA_BUF;
+    volatile uint16_t *cp = (uint16_t *)(CGA_BUF + KERNBASE);
     uint16_t was = *cp;
     *cp = (uint16_t) 0xA55A;
     if (*cp != 0xA55A) {
-        cp = (uint16_t*)MONO_BUF;
+        cp = (uint16_t*)(MONO_BUF + KERNBASE);
         addr_6845 = MONO_BASE;
     } else {
         *cp = was;
@@ -101,11 +105,14 @@ serial_init(void) {
     serial_exists = (inb(COM1 + COM_LSR) != 0xFF);
     (void) inb(COM1+COM_IIR);
     (void) inb(COM1+COM_RX);
+
+    if (serial_exists) {
+        pic_enable(IRQ_COM1);
+    }
 }
 
-/* lpt_putc - copy console output to parallel port */
 static void
-lpt_putc(int c) {
+lpt_putc_sub(int c) {
     int i;
     for (i = 0; !(inb(LPTPORT + 1) & 0x80) && i < 12800; i ++) {
         delay();
@@ -113,6 +120,19 @@ lpt_putc(int c) {
     outb(LPTPORT + 0, c);
     outb(LPTPORT + 2, 0x08 | 0x04 | 0x01);
     outb(LPTPORT + 2, 0x08);
+}
+
+/* lpt_putc - copy console output to parallel port */
+static void
+lpt_putc(int c) {
+    if (c != '\b') {
+        lpt_putc_sub(c);
+    }
+    else {
+        lpt_putc_sub('\b');
+        lpt_putc_sub(' ');
+        lpt_putc_sub('\b');
+    }
 }
 
 /* cga_putc - print character to console */
@@ -157,14 +177,26 @@ cga_putc(int c) {
     outb(addr_6845 + 1, crt_pos);
 }
 
-/* serial_putc - print character to serial port */
 static void
-serial_putc(int c) {
+serial_putc_sub(int c) {
     int i;
     for (i = 0; !(inb(COM1 + COM_LSR) & COM_LSR_TXRDY) && i < 12800; i ++) {
         delay();
     }
     outb(COM1 + COM_TX, c);
+}
+
+/* serial_putc - print character to serial port */
+static void
+serial_putc(int c) {
+    if (c != '\b') {
+        serial_putc_sub(c);
+    }
+    else {
+        serial_putc_sub('\b');
+        serial_putc_sub(' ');
+        serial_putc_sub('\b');
+    }
 }
 
 /* *
@@ -204,7 +236,11 @@ serial_proc_data(void) {
     if (!(inb(COM1 + COM_LSR) & COM_LSR_DATA)) {
         return -1;
     }
-    return inb(COM1 + COM_RX);
+    int c = inb(COM1 + COM_RX);
+    if (c == 127) {
+        c = '\b';
+    }
+    return c;
 }
 
 /* serial_intr - try to feed input characters from serial port */
@@ -372,6 +408,7 @@ static void
 kbd_init(void) {
     // drain the kbd buffer
     kbd_intr();
+    pic_enable(IRQ_KBD);
 }
 
 /* cons_init - initializes the console devices */
@@ -388,9 +425,14 @@ cons_init(void) {
 /* cons_putc - print a single character @c to console devices */
 void
 cons_putc(int c) {
-    lpt_putc(c);
-    cga_putc(c);
-    serial_putc(c);
+    bool intr_flag;
+    local_intr_save(intr_flag);
+    {
+        lpt_putc(c);
+        cga_putc(c);
+        serial_putc(c);
+    }
+    local_intr_restore(intr_flag);
 }
 
 /* *
@@ -399,22 +441,25 @@ cons_putc(int c) {
  * */
 int
 cons_getc(void) {
-    int c;
+    int c = 0;
+    bool intr_flag;
+    local_intr_save(intr_flag);
+    {
+        // poll for any pending input characters,
+        // so that this function works even when interrupts are disabled
+        // (e.g., when called from the kernel monitor).
+        serial_intr();
+        kbd_intr();
 
-    // poll for any pending input characters,
-    // so that this function works even when interrupts are disabled
-    // (e.g., when called from the kernel monitor).
-    serial_intr();
-    kbd_intr();
-
-    // grab the next character from the input buffer.
-    if (cons.rpos != cons.wpos) {
-        c = cons.buf[cons.rpos ++];
-        if (cons.rpos == CONSBUFSIZE) {
-            cons.rpos = 0;
+        // grab the next character from the input buffer.
+        if (cons.rpos != cons.wpos) {
+            c = cons.buf[cons.rpos ++];
+            if (cons.rpos == CONSBUFSIZE) {
+                cons.rpos = 0;
+            }
         }
-        return c;
     }
-    return 0;
+    local_intr_restore(intr_flag);
+    return c;
 }
 

@@ -46,6 +46,8 @@
 #define STS_IG32        0xE                 // 32-bit Interrupt Gate
 #define STS_TG32        0xF                 // 32-bit Trap Gate
 
+#ifdef __ASSEMBLER__
+
 #define SEG_NULL()                              \
     .quad 0x0, 0x0
 
@@ -58,6 +60,122 @@
     .word 0x0, 0x0;                             \
     .byte 0x0, (0x90 | (type)), 0x0, 0x0;       \
     .word 0x0, 0x0, 0x0, 0x0
+
+#else /* not __ASSEMBLER__ */
+
+#include <types.h>
+
+/* Segment descriptors for interrupts and traps */
+struct gatedesc {
+    unsigned int gd_off_15_0 : 16;  // [0 ~ 16] bits of offset in segment
+    unsigned int gd_ss : 16;        // segment selector
+    unsigned int gd_ist : 3;        // interrupt stack table
+    unsigned int gd_rsv1 : 5;       // reserved bits
+    unsigned int gd_type : 4;       // type (STS_{TG,IG32,TG32})
+    unsigned int gd_s : 1;          // 0 for system, 1 for code or data
+    unsigned int gd_dpl : 2;        // descriptor(meaning new) privilege level
+    unsigned int gd_p : 1;          // Present
+    unsigned int gd_off_31_16 : 16; // [16 ~ 31] bits of offset in segment
+    unsigned int gd_off_63_32 : 32; // [32 ~ 63] bits of offset in segment
+    unsigned int gd_rsv2 : 32;      // reserved bits
+};
+
+/* *
+ * Set up a normal interrupt/trap gate descriptor
+ *   - istrap: 1 for a trap (= exception) gate, 0 for an interrupt gate
+ *   - sel: Code segment selector for interrupt/trap handler
+ *   - off: Offset in code segment for interrupt/trap handler
+ *   - dpl: Descriptor Privilege Level - the privilege level required
+ *          for software to invoke this interrupt/trap gate explicitly
+ *          using an int instruction.
+ * */
+
+#define SETGATE(gate, istrap, sel, off, dpl) {              \
+        (gate).gd_off_15_0 = (uint64_t)(off) & 0xffff;      \
+        (gate).gd_ss = (sel);                               \
+        (gate).gd_ist = 0;                                  \
+        (gate).gd_rsv1 = 0;                                 \
+        (gate).gd_type = (istrap) ? STS_TG32 : STS_IG32;    \
+        (gate).gd_s = 0;                                    \
+        (gate).gd_dpl = (dpl);                              \
+        (gate).gd_p = 1;                                    \
+        (gate).gd_off_31_16 = (uint64_t)(off) >> 16;        \
+        (gate).gd_off_63_32 = (uint64_t)(off) >> 32;        \
+        (gate).gd_rsv2 = 0;                                 \
+    }
+
+/* Set up a call gate descriptor */
+#define SETCALLGATE(gate, ss, off, dpl) {                   \
+        (gate).gd_off_15_0 = (uint64_t)(off) & 0xffff;      \
+        (gate).gd_ss = (ss);                                \
+        (gate).gd_ist = 0;                                  \
+        (gate).gd_rsv1 = 0;                                 \
+        (gate).gd_type = STS_CG32;                          \
+        (gate).gd_s = 0;                                    \
+        (gate).gd_dpl = (dpl);                              \
+        (gate).gd_p = 1;                                    \
+        (gate).gd_off_31_16 = (uint64_t)(off) >> 16;        \
+        (gate).gd_off_63_32 = (uint64_t)(off) >> 32;        \
+        (gate).gd_rsv2 = 0;                                 \
+    }
+
+/* segment descriptors */
+struct segdesc {
+    unsigned int sd_lim_15_0 : 16;  // [0 ~ 15] bits of segment limit
+    unsigned int sd_base_15_0 : 16; // [0 ~ 15] bits of segment base address
+    unsigned int sd_base_23_16 : 8; // [16 ~ 23] bits of segment base address
+    unsigned int sd_type : 4;       // segment type (see STS_ constants)
+    unsigned int sd_s : 1;          // 0 = system, 1 = application
+    unsigned int sd_dpl : 2;        // descriptor Privilege Level
+    unsigned int sd_p : 1;          // present
+    unsigned int sd_lim_19_16 : 4;  // [16 ~ 19] bits of segment limit
+    unsigned int sd_avl : 1;        // unused (available for software use)
+    unsigned int sd_l : 1;          // 64-bit code segment
+    unsigned int sd_db : 1;         // 0 = 16-bit segment, 1 = 32-bit segment
+    unsigned int sd_g : 1;          // granularity: limit scaled by 4K when set
+    unsigned int sd_base_31_24 : 8; // [24 ~ 31] bits of segment base address
+    unsigned int sd_base_63_32 : 32;// [32 ~ 63] bits of segment base address
+    unsigned int sd_rsv : 32;       // reserved
+};
+
+#define SEG_NULL                                            \
+    (struct segdesc) {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+#define SEG(type, dpl)                                      \
+    (struct segdesc) {                                      \
+        0, 0, 0, type, 1, dpl, 1,                           \
+        0, 0, 1, 0, 1, 0, 0, 0                              \
+    }
+
+#define SEGTSS(type, base, lim, dpl)                        \
+    (struct segdesc) {                                      \
+        (lim) & 0xffff, (base) & 0xffff,                    \
+        ((base) >> 16) & 0xff, type, 0, dpl, 1,             \
+        ((lim) >> 16) & 0xf, 0, 0, 0, 0,                    \
+        ((base) >> 24) & 0xff,                              \
+        ((base) >> 32) & 0xffffffff, 0                      \
+    }
+
+/* task state segment format (as described by the x86_64 architecture book) */
+struct taskstate {
+    uint32_t ts_rsv0;               // reserved bits
+    uint64_t ts_rsp0;               // stack pointers
+    uint64_t ts_rsp1;
+    uint64_t ts_rsp2;
+    uint64_t ts_rsv1;
+    uint64_t ts_ist1;               // interrupt stack table (IST) pointers
+    uint64_t ts_ist2;
+    uint64_t ts_ist3;
+    uint64_t ts_ist4;
+    uint64_t ts_ist5;
+    uint64_t ts_ist6;
+    uint64_t ts_ist7;
+    uint64_t ts_rsv2;
+    uint16_t ts_rsv3;
+    uint16_t ts_iomb;               // i/o map base address
+} __attribute__((packed));
+
+#endif /* ! __ASSEMBLER__ */
 
 // A linear address 'la' has a three-part structure as follows:
 // PGD : Page Global Directory

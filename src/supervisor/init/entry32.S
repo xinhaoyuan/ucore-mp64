@@ -3,9 +3,10 @@
 
 .text
 .code32
+.global sv_entry32
 .global kern_entry32
 kern_entry32:
-
+sv_entry32:		
     # Detection of CPUID:
     #  Basically, detecting wheterh CPUID is supported is covered here.
     #  CPUID is supported when the ID-bit in the FLAGS-register can be flipped.

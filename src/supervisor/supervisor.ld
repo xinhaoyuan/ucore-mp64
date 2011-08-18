@@ -12,7 +12,7 @@ SECTIONS {
 	. = 0x00200000;
 
     .entry32 : {
-        *init_2entry32.S.o*(.text .rodata .data)
+        *entry32.S.o*(.text .rodata .data)
     }
 
     . = ALIGN(0x1000);

@@ -3,12 +3,45 @@
 
 #include <types.h>
 
+static inline void
+cpuid(uint32_t info, uint32_t *eaxp, uint32_t *ebxp, uint32_t *ecxp, uint32_t *edxp)
+{
+     uint32_t eax, ebx, ecx, edx;
+     asm volatile("cpuid" 
+		  : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)
+		  : "a" (info));
+     if (eaxp)
+	  *eaxp = eax;
+     if (ebxp)
+	  *ebxp = ebx;
+     if (ecxp)
+	  *ecxp = ecx;
+     if (edxp)
+	  *edxp = edx;
+}
+
 #define barrier() __asm__ __volatile__ ("" ::: "memory")
 
 static inline uint8_t inb(uint16_t port) __attribute__((always_inline));
 static inline void insl(uint32_t port, void *addr, int cnt) __attribute__((always_inline));
 static inline void outb(uint16_t port, uint8_t data) __attribute__((always_inline));
 static inline void outw(uint16_t port, uint16_t data) __attribute__((always_inline));
+
+/* Pseudo-descriptors used for LGDT, LLDT(not used) and LIDT instructions. */
+struct pseudodesc {
+    uint16_t pd_lim;        // Limit
+    uintptr_t pd_base;      // Base address
+} __attribute__ ((packed));
+
+static inline void lidt(struct pseudodesc *pd) __attribute__((always_inline));
+static inline void sti(void) __attribute__((always_inline));
+static inline void cli(void) __attribute__((always_inline));
+static inline void ltr(uint16_t sel) __attribute__((always_inline));
+static inline void lcr0(uintptr_t cr0) __attribute__((always_inline));
+static inline void lcr3(uintptr_t cr3) __attribute__((always_inline));
+static inline uintptr_t rcr0(void) __attribute__((always_inline));
+static inline uintptr_t rcr3(void) __attribute__((always_inline));
+static inline void invlpg(void *addr) __attribute__((always_inline));
 
 static inline uint8_t
 inb(uint16_t port) {
@@ -37,6 +70,55 @@ outw(uint16_t port, uint16_t data) {
     asm volatile ("outw %0, %1" :: "a" (data), "d" (port) : "memory");
 }
 
+static inline void
+lidt(struct pseudodesc *pd) {
+    asm volatile ("lidt (%0)" :: "r" (pd) : "memory");
+}
+
+static inline void
+sti(void) {
+    asm volatile ("sti");
+}
+
+static inline void
+cli(void) {
+    asm volatile ("cli" ::: "memory");
+}
+
+static inline void
+ltr(uint16_t sel) {
+    asm volatile ("ltr %0" :: "r" (sel) : "memory");
+}
+
+static inline void
+lcr0(uintptr_t cr0) {
+    asm volatile ("mov %0, %%cr0" :: "r" (cr0) : "memory");
+}
+
+static inline void
+lcr3(uintptr_t cr3) {
+    asm volatile ("mov %0, %%cr3" :: "r" (cr3) : "memory");
+}
+
+static inline uintptr_t
+rcr0(void) {
+    uintptr_t cr0;
+    asm volatile ("mov %%cr0, %0" : "=r" (cr0) :: "memory");
+    return cr0;
+}
+
+static inline uintptr_t
+rcr3(void) {
+    uintptr_t cr3;
+    asm volatile ("mov %%cr3, %0" : "=r" (cr3) :: "memory");
+    return cr3;
+}
+
+static inline void
+invlpg(void *addr) {
+    asm volatile ("invlpg (%0)" :: "r" (addr) : "memory");
+}
+
 #ifdef __UCORE_64__
 
 #define do_div(n, base) ({                                          \
@@ -47,6 +129,8 @@ outw(uint16_t port, uint16_t data) {
         })
 
 static inline uint64_t read_rbp(void) __attribute__((always_inline));
+static inline uint64_t read_rflags(void) __attribute__((always_inline));
+static inline void write_rflags(uint64_t rflags) __attribute__((always_inline));
 
 static inline uint64_t
 read_rbp(void) {
@@ -55,7 +139,19 @@ read_rbp(void) {
     return rbp;
 }
 
-#else /* not __UCORE_64__ */
+static inline uint64_t
+read_rflags(void) {
+    uint64_t rflags;
+    asm volatile ("pushfq; popq %0" : "=r" (rflags));
+    return rflags;
+}
+
+static inline void
+write_rflags(uint64_t rflags) {
+    asm volatile ("pushq %0; popfq" :: "r" (rflags));
+}
+
+#else /* not __UCORE_64__ (only used for 32-bit libs) */
 
 #define do_div(n, base) ({                                          \
             unsigned long __upper, __low, __high, __mod, __base;    \
@@ -73,12 +169,26 @@ read_rbp(void) {
         })
 
 static inline uint32_t read_ebp(void) __attribute__((always_inline));
+static inline uint32_t read_eflags(void) __attribute__((always_inline));
+static inline void write_eflags(uint32_t eflags) __attribute__((always_inline));
 
 static inline uint32_t
 read_ebp(void) {
     uint32_t ebp;
     asm volatile ("movl %%ebp, %0" : "=r" (ebp));
     return ebp;
+}
+
+static inline uint32_t
+read_eflags(void) {
+    uint32_t eflags;
+    asm volatile ("pushfl; popl %0" : "=r" (eflags));
+    return eflags;
+}
+
+static inline void
+write_eflags(uint32_t eflags) {
+    asm volatile ("pushl %0; popfl" :: "r" (eflags));
 }
 
 #endif /* !__UCORE_64__ */

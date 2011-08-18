@@ -1,6 +1,6 @@
 #include <types.h>
-#include <x86.h>
 #include <stdio.h>
+#include <intr.h>
 #include <monitor.h>
 
 static bool is_panic = 0;
@@ -19,12 +19,13 @@ __panic(const char *file, int line, const char *fmt, ...) {
     // print the 'message'
     va_list ap;
     va_start(ap, fmt);
-    cprintf("kernel panic at %s:%d:\n", file, line);
+    cprintf("kernel panic at %s:%d:\n    ", file, line);
     vcprintf(fmt, ap);
     cprintf("\n");
     va_end(ap);
 
 panic_dead:
+    intr_disable();
     while (1) {
         monitor(NULL);
     }
@@ -35,7 +36,7 @@ void
 __warn(const char *file, int line, const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    cprintf("kernel warning at %s:%d:\n", file, line);
+    cprintf("kernel warning at %s:%d:\n    ", file, line);
     vcprintf(fmt, ap);
     cprintf("\n");
     va_end(ap);
