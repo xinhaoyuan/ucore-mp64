@@ -125,7 +125,6 @@ print_regs(struct pushregs *regs) {
 static void
 trap_dispatch(struct trapframe *tf) {
     char c;
-
     switch (tf->tf_trapno) {
     case IRQ_OFFSET + IRQ_TIMER:
         ticks ++;
@@ -146,6 +145,7 @@ trap_dispatch(struct trapframe *tf) {
             panic("unexpected trap in kernel.\n");
         }
     }
+	lapic_send_eoi();
 }
 
 void

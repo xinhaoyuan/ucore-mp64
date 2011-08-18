@@ -31,15 +31,19 @@ volatile size_t ticks;
  * */
 void
 clock_init(void) {
+#if 0
     // set 8253 timer-chip
     outb(TIMER_MODE, TIMER_SEL0 | TIMER_RATEGEN | TIMER_16BIT);
     outb(IO_TIMER1, TIMER_DIV(100) % 256);
     outb(IO_TIMER1, TIMER_DIV(100) / 256);
+	pic_enable(IRQ_TIMER);
+#else
+	lapic_set_timer(100);
+#endif
 
     // initialize time counter 'ticks' to zero
     ticks = 0;
 
     cprintf("++ setup timer interrupts\n");
-    pic_enable(IRQ_TIMER);
 }
 

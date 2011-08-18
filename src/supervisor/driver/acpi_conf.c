@@ -2,12 +2,9 @@
 #include <pmm.h>
 #include <error.h>
 #include <x86.h>
-
-#undef KADDR
-#undef PADDR
-
-#define KADDR(addr) ((void*)((uintptr_t)(addr) + KERNBASE))
-#define PADDR(addr) ((uintptr_t)(addr) - KERNBASE)
+#include <sysconf.h>
+#include <lapic.h>
+#include <ioapic.h>
 
 struct acpi_rsdp_s
 {
@@ -60,7 +57,7 @@ struct acpi_hpet_desc_s
 
 struct acpi_madt_s
 {
-	uint32_t lapic_phys32;
+	uint32_t lapic_phys;
 	uint32_t flags;
 };
 
@@ -81,7 +78,7 @@ struct acpi_madt_apic_desc_s
 		{
 			uint8_t apic_id;
 			uint8_t reserved;
-			uint32_t phys32;
+			uint32_t phys;
 			uint32_t intr_base;
 		} __attribute__((packed)) ioapic;
 	};
@@ -134,24 +131,20 @@ acpi_rsdp_search(void)
 	struct acpi_rsdp_s *rsdp;
 	uint64_t x;
 	/* see ACPI SPEC for details */
-	bda = (uint8_t *)KADDR(BDA);
+	bda = (uint8_t *)DIRECT_KADDR(BDA);
 	x = ((bda[0x0F] << 8) | bda[0x0E]) << 4;
-	p = (uintptr_t)KADDR(x);
+	p = (uintptr_t)DIRECT_KADDR(x);
 	if (p)
 	{
 		if ((rsdp = acpi_rsdp_search_segment((uint8_t *)p, 1024, 0xf, 1)))
 			return rsdp;
 	}
-	return acpi_rsdp_search_segment((uint8_t *)KADDR(0xE0000), 0x20000, 0xf, 1);
+	return acpi_rsdp_search_segment((uint8_t *)DIRECT_KADDR(0xE0000), 0x20000, 0xf, 1);
 }
 
 int
 acpi_conf_init(void)
 {
-	int lcpu_count = 0;
-	int ioapic_count = 0;
-	int has_hpet = 0;
-	int lcpu_boot = 0;
 	struct acpi_rsdp_s *rsdp = acpi_rsdp_search();
 	if (!rsdp)
 	{
@@ -159,17 +152,17 @@ acpi_conf_init(void)
 		return -E_UNSPECIFIED;
 	}
 
-	lcpu_count = 0;
-	ioapic_count = 0;
-	has_hpet = 0;
+	sysconf.lcpu_count = 0;
+	sysconf.ioapic_count = 0;
+	sysconf.has_hpet = 0;
 
 	uint32_t b;
 	cpuid(1, NULL, &b, NULL, NULL);
 	int cur_apic_id = (b >> 24) & 0xff;
-	lcpu_boot = cur_apic_id;
+	sysconf.lcpu_boot = cur_apic_id;
 
 	int xsdp = (rsdp->revision != 0) ? 1 : 0;
-	struct acpi_sdth_s *sdt = (struct acpi_sdth_s *)KADDR(xsdp ? rsdp->xsdt_phys : rsdp->rsdt_phys);
+	struct acpi_sdth_s *sdt = (struct acpi_sdth_s *)DIRECT_KADDR(xsdp ? rsdp->xsdt_phys : rsdp->rsdt_phys);
 	int n = (sdt->length  - sizeof(struct acpi_sdth_s)) / (xsdp ? 8 : 4);
 
 	char sign[5];
@@ -181,53 +174,66 @@ acpi_conf_init(void)
 		if (xsdp)
 			phys = *(uint64_t *)((uintptr_t)(sdt + 1) + (i << (xsdp ? 3 : 2)));
 		else phys = *(uint32_t *)((uintptr_t)(sdt + 1) + (i << (xsdp ? 3 : 2)));
-		struct acpi_sdth_s *cur = (struct acpi_sdth_s *)KADDR(phys);
+		struct acpi_sdth_s *cur = (struct acpi_sdth_s *)DIRECT_KADDR(phys);
 		memmove(sign, (char *)&cur->signature, 4);
 		cprintf("Processing %s\n", sign);
 		if (memcmp(cur->signature, "APIC", 4) == 0)
 		{
 			struct acpi_madt_s *madt = (struct acpi_madt_s *)(cur + 1);
 
-			/* ekf_sysconf.lapic_phys = madt->lapic_phys; */
+			sysconf.lapic_phys = madt->lapic_phys;
 
-			/* char *apic_cur = (char *)(madt + 1); */
-			/* char *apic_end = (char *)cur + cur->length; */
+			uintptr_t phys_base = sysconf.lapic_phys & ~(uintptr_t)(PGSIZE - 1);
+			*get_pte(boot_pgdir, (uintptr_t)DIRECT_KADDR(phys_base), 1) =
+				phys_base | PTE_P | PTE_W;
 
-			/* while (apic_cur < apic_end) */
-			/* { */
-			/* 	struct acpi_madt_apic_desc_s *desc = */
-			/* 		(struct acpi_madt_apic_desc_s *)apic_cur; */
+			char *apic_cur = (char *)(madt + 1);
+			char *apic_end = (char *)cur + cur->length;
 
-			/* 	if (desc->type == 0 && (desc->lapic.flags & 1)) */
-			/* 	{ */
-			/* 		/\* Logical Processor, enabled *\/ */
-			/* 		kprintf("CPU APIC ID = %d\n", desc->lapic.apic_id); */
-			/* 		if (cur_apic_id == desc->lapic.apic_id) */
-			/* 		{ */
-			/* 			apic_map[ekf_sysconf.lcpu_count] = desc->lapic.apic_id; */
-			/* 			++ ekf_sysconf.lcpu_count; */
-			/* 		} */
-			/* 		else kprintf("skiped\n"); */
-			/* 	} */
-			/* 	else if (desc->type == 1) */
-			/* 	{ */
-			/* 		/\* IO APIC *\/ */
-			/* 		ioapics[ekf_sysconf.ioapic_count].apic_id = desc->ioapic.apic_id; */
-			/* 		ioapics[ekf_sysconf.ioapic_count].phys = desc->ioapic.phys; */
-			/* 		ioapics[ekf_sysconf.ioapic_count].intr_base = desc->ioapic.intr_base; */
-			/* 		++ ekf_sysconf.ioapic_count; */
-			/* 	} */
+			while (apic_cur < apic_end)
+			{
+				struct acpi_madt_apic_desc_s *desc =
+					(struct acpi_madt_apic_desc_s *)apic_cur;
 
-			/* 	apic_cur += desc->length; */
-			/* } */
+				if (desc->type == 0 && (desc->lapic.flags & 1))
+				{
+					/* Logical Processor, enabled */
+					// cprintf("CPU APIC ID = %d\n", desc->lapic.apic_id);
+					/* if (cur_apic_id == desc->lapic.apic_id) */
+					/* { */
+						lcpu_id_set[sysconf.lcpu_count] = desc->lapic.apic_id;
+						++ sysconf.lcpu_count;
+				    /* } */
+					/* else kprintf("skiped\n"); */
+				}
+				else if (desc->type == 1)
+				{
+ 					/* IO APIC */
+					ioapic[sysconf.ioapic_count].apic_id = desc->ioapic.apic_id;
+					ioapic[sysconf.ioapic_count].phys    = desc->ioapic.phys;
+					ioapic[sysconf.ioapic_count].intr_base = desc->ioapic.intr_base;
+
+					phys_base = desc->ioapic.phys & ~(uintptr_t)(PGSIZE - 1);
+					*get_pte(boot_pgdir, (uintptr_t)DIRECT_KADDR(phys_base), 1) =
+						phys_base | PTE_P | PTE_W;
+					
+					++ sysconf.ioapic_count;
+				}
+
+				apic_cur += desc->length;
+			}
 		}
 		else if (memcmp(cur->signature, "HPET", 4) == 0)
 		{
-			/* struct acpi_hpet_desc_s *hpet = (struct acpi_hpet_desc_s *)(cur + 1); */
-			/* ekf_sysconf.has_hpet = 1; */
-			/* ekf_sysconf.hpet_phys = hpet->base_low_addr.addr_32; */
+#if 0
+			struct acpi_hpet_desc_s *hpet = (struct acpi_hpet_desc_s *)(cur + 1);
+			sysconf.has_hpet = 1;
+			sysconf.hpet_phys = hpet->base_low_addr.addr_32;
+#endif
 		}
 	}
+
+	lcr3(boot_cr3);
 
 	return 0;
 }

@@ -8,6 +8,8 @@
 #include <clock.h>
 #include <intr.h>
 #include <pmm.h>
+#include <ioapic.h>
+#include <lapic.h>
 #include <acpi_conf.h>
 
 int kern_init(void) __attribute__((noreturn));
@@ -30,10 +32,15 @@ kern_init(void) {
     idt_init();                 // init interrupt descriptor table
 
 	acpi_conf_init();
+	lapic_init();
+	ioapic_init();
 	
-    /* clock_init();               // init clock interrupt */
-    /* intr_enable();              // enable irq interrupt */
+    clock_init();               // init clock interrupt
+    intr_enable();              // enable irq interrupt
 
+	ioapic_enable(ioapic_id_set[0], IRQ_KBD, 0);
+
+	cprintf("ALL DONE!\n");
     /* do nothing */
     while (1);
 }

@@ -74,6 +74,11 @@ void print_pgdir(void);
             (void *) (__m_pa + KERNBASE);                               \
         })
 
+/* Simply translate between VA and PA without checking */
+#define DIRECT_KADDR(addr) ((void*)((uintptr_t)(addr) + KERNBASE))
+#define DIRECT_PADDR(addr) ((uintptr_t)(addr) - KERNBASE)
+
+
 extern struct Page *pages;
 extern size_t npage;
 

@@ -150,7 +150,6 @@ alloc_pages(size_t n) {
         page = pmm_manager->alloc_pages(n);
     }
     local_intr_restore(intr_flag);
-	cprintf("alloc_pages: %p\n", page2pa(page));
     return page;
 }
 
