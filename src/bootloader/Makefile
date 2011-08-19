@@ -1,9 +1,9 @@
 .PHONY: all
 
 SRCFILES   := $(shell find . '(' '!' -regex '/_.*' ')' -and '(' -iname "*.c" -or -iname "*.S" ')' | sed -e 's!\./!!g')
-T_CC_ALL_FLAGS := -Os -I../libs -I.
+T_CC_ALL_FLAGS := -Os -I.
 
-include ${T_BASE}/mk/compk32.mk
+include ${T_BASE}/mk/compbl.mk
 include ${T_BASE}/mk/template.mk
 
 all: ${T_BIN}/bootsect
