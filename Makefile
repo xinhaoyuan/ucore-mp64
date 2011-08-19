@@ -16,5 +16,5 @@ clean:
 	rm -rf ${T_BIN}/*
 
 qemu: all
-	qemu-system-x86_64 -smp 2 ${T_BIN}/image \
+	qemu-system-x86_64 -smp 4 ${T_BIN}/image \
 	-serial file:bin/serial.log -monitor stdio

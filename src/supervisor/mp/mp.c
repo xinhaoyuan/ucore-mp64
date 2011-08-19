@@ -9,6 +9,8 @@
 /* Provided by link script */
 extern char boot_ap_entry_64[];
 
+static uintptr_t boot_ap_stack;
+
 int
 mp_init(void)
 {
@@ -25,7 +27,7 @@ mp_init(void)
 	for (i = 0; i != sysconf.lcpu_count; ++ i)
 		if (lcpu_id_set[i] > max_apic) max_apic = lcpu_id_set[i];
 
-	void *boot_ap_stack = page2kva(alloc_pages(max_apic));
+	boot_ap_stack = (uintptr_t)page2kva(alloc_pages(max_apic));
 	memset(KADDR(BOOT_AP_STACK_BASE), 0, 8);
 	memmove(KADDR(BOOT_AP_STACK_BASE), &boot_ap_stack, sizeof(boot_ap_stack));
 	
@@ -62,12 +64,13 @@ lgdt(struct pseudodesc *pd) {
 }
 
 void
-ap_init(void)
+ap_boot_init(void)
 {
     lgdt(&gdt_pd);
+	load_rsp0(lapic_id(), boot_ap_stack + PGSIZE * lapic_id());
 	ltr(GD_TSS(lapic_id()));
 	lidt(&idt_pd);
 	lapic_init_ap();
 
-	while (1) ;
+	lcpu_init();
 }

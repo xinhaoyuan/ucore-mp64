@@ -87,7 +87,7 @@ longmode_entry:
 		movq %rax, %rsp
 
 		movq $KERNBASE, %rax
-		addq $(ap_init - KERNBASE), %rax
+		addq $(ap_boot_init - KERNBASE), %rax
 		call *%rax
 
 ap_spin:

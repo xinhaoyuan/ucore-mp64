@@ -13,10 +13,11 @@
 #include <acpi_conf.h>
 #include <sysconf.h>
 #include <x86.h>
+#include <lcpu.h>
 
-int kern_init(void) __attribute__((noreturn));
+void kern_init(void) __attribute__((noreturn));
 
-int
+void
 kern_init(void) {
     extern char edata[], end[];
     memset(edata, 0, end - edata);
@@ -43,16 +44,7 @@ kern_init(void) {
 	lapic_init();
 	ioapic_init();
 
-#if 0
-    clock_init();               // init clock interrupt
-    intr_enable();              // enable irq interrupt
-
-	ioapic_enable(ioapic_id_set[0], IRQ_KBD, 0);
-#else
 	mp_init();
-#endif
-	cprintf("ALL DONE!\n");
-    /* do nothing */
-    while (1);
-}
 
+	lcpu_init();
+}
