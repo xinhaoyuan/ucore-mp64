@@ -8,6 +8,8 @@
 #include <buddy_pmm.h>
 #include <sync.h>
 #include <error.h>
+#include <lapic.h>
+#include <sysconf.h>
 
 /* *
  * Task State Segment:
@@ -29,7 +31,7 @@
  * mode, the x86-64 CPU will look in the TSS for SS0 and RSP0 and load their value
  * into SS and RSP respectively.
  * */
-static struct taskstate ts = {0};
+static struct taskstate ts[LAPIC_COUNT] = {0};
 
 // virtual address of physicall page array
 struct Page *pages;
@@ -62,16 +64,15 @@ pgd_t * const vgd = (pgd_t *)PGADDR(PGX(VPT), PGX(VPT), PGX(VPT), PGX(VPT), 0);
  *   - 0x40:  user data segment
  *   - 0x50:  defined for tss, initialized in gdt_init
  * */
-static struct segdesc gdt[] = {
+static struct segdesc gdt[5 + LAPIC_COUNT] = {
     SEG_NULL,
     [SEG_KTEXT] = SEG(STA_X | STA_R, DPL_KERNEL),
     [SEG_KDATA] = SEG(STA_W, DPL_KERNEL),
     [SEG_UTEXT] = SEG(STA_X | STA_R, DPL_USER),
     [SEG_UDATA] = SEG(STA_W, DPL_USER),
-    [SEG_TSS]   = SEG_NULL,
 };
 
-static struct pseudodesc gdt_pd = {
+struct pseudodesc gdt_pd = {
     sizeof(gdt) - 1, (uintptr_t)gdt
 };
 
@@ -106,24 +107,28 @@ lgdt(struct pseudodesc *pd) {
  * user to kernel.
  * */
 void
-load_rsp0(uintptr_t rsp0) {
-    ts.ts_rsp0 = rsp0;
+load_rsp0(int apic_id, uintptr_t rsp0) {
+    ts[apic_id].ts_rsp0 = rsp0;
 }
 
 /* gdt_init - initialize the default GDT and TSS */
 static void
 gdt_init(void) {
     // set boot kernel stack and default SS0
-    load_rsp0((uintptr_t)bootstacktop);
+    load_rsp0(sysconf.lcpu_boot, (uintptr_t)bootstacktop);
 
     // initialize the TSS filed of the gdt
-    gdt[SEG_TSS] = SEGTSS(STS_T32A, (uintptr_t)&ts, sizeof(ts), DPL_KERNEL);
+	int i;
+	for (i = 0; i != LAPIC_COUNT; ++ i)
+	{
+		gdt[SEG_TSS(i)] = SEGTSS(STS_T32A, (uintptr_t)&ts[i], sizeof(ts[i]), DPL_KERNEL);
+	}
 
     // reload all segment registers
     lgdt(&gdt_pd);
 
     // load the TSS
-    ltr(GD_TSS);
+    ltr(GD_TSS(sysconf.lcpu_boot));
 }
 
 //init_pmm_manager - initialize a pmm_manager instance

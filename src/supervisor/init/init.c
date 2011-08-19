@@ -11,6 +11,8 @@
 #include <ioapic.h>
 #include <lapic.h>
 #include <acpi_conf.h>
+#include <sysconf.h>
+#include <x86.h>
 
 int kern_init(void) __attribute__((noreturn));
 
@@ -25,6 +27,12 @@ kern_init(void) {
     cprintf("%s\n\n", message);
 
     print_kerninfo();
+
+	/* Get the self apic id for locating the TSS */
+	uint32_t b;
+	cpuid(1, NULL, &b, NULL, NULL);
+	int cur_apic_id = (b >> 24) & 0xff;
+	sysconf.lcpu_boot = cur_apic_id;
 
     pmm_init();                 // init physical memory management
 

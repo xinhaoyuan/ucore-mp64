@@ -104,6 +104,12 @@ lapic_init_ap(void)
 }
 
 int
+lapic_id(void)
+{
+	return (lapicr(ID) >> 24) & 0xFF;
+}
+
+int
 lapic_init(void)
 {	
 	// Enable local APIC; set spurious interrupt vector.
@@ -178,7 +184,6 @@ microdelay(int us)
 void
 lapic_startap(int apicid, uint32_t addr)
 {
-	cprintf("lapic_startap %d %p\n", apicid, addr);
 	int i;
 	uint16_t *wrv;
 	 

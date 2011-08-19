@@ -156,11 +156,6 @@ acpi_conf_init(void)
 	sysconf.ioapic_count = 0;
 	sysconf.has_hpet = 0;
 
-	uint32_t b;
-	cpuid(1, NULL, &b, NULL, NULL);
-	int cur_apic_id = (b >> 24) & 0xff;
-	sysconf.lcpu_boot = cur_apic_id;
-
 	int xsdp = (rsdp->revision != 0) ? 1 : 0;
 	struct acpi_sdth_s *sdt = (struct acpi_sdth_s *)DIRECT_KADDR(xsdp ? rsdp->xsdt_phys : rsdp->rsdt_phys);
 	int n = (sdt->length  - sizeof(struct acpi_sdth_s)) / (xsdp ? 8 : 4);

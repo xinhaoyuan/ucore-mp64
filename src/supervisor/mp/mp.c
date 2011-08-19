@@ -3,6 +3,8 @@
 #include <pmm.h>
 #include <sysconf.h>
 #include <lapic.h>
+#include <x86.h>
+#include <trap.h>
 
 /* Provided by link script */
 extern char boot_ap_entry_64[];
@@ -23,7 +25,7 @@ mp_init(void)
 	for (i = 0; i != sysconf.lcpu_count; ++ i)
 		if (lcpu_id_set[i] > max_apic) max_apic = lcpu_id_set[i];
 
-	uintptr_t boot_ap_stack = page2kva(alloc_pages(max_apic));
+	void *boot_ap_stack = page2kva(alloc_pages(max_apic));
 	memset(KADDR(BOOT_AP_STACK_BASE), 0, 8);
 	memmove(KADDR(BOOT_AP_STACK_BASE), &boot_ap_stack, sizeof(boot_ap_stack));
 	
@@ -33,18 +35,39 @@ mp_init(void)
 		apic_id = lcpu_id_set[i];
 		if (apic_id != sysconf.lcpu_boot)
 		{
-			cprintf("BOOTING CPU %d\n", apic_id);
 			lapic_startap(apic_id, BOOT_AP_ENTRY);
 		}
-		else cprintf("SKIP CPU %d\n", apic_id);
 	 }
 
 	return 0;
 }
 
+/* Copy from pmm.c */
+static inline void
+lgdt(struct pseudodesc *pd) {
+    asm volatile ("lgdt (%0)" :: "r" (pd));
+    asm volatile ("movw %%ax, %%es" :: "a" (KERNEL_DS));
+    asm volatile ("movw %%ax, %%ds" :: "a" (KERNEL_DS));
+    // reload cs & ss
+    asm volatile (
+        "movq %%rsp, %%rax;"            // move %rsp to %rax
+        "pushq %1;"                     // push %ss
+        "pushq %%rax;"                  // push %rsp
+        "pushfq;"                       // push %rflags
+        "pushq %0;"                     // push %cs
+        "call 1f;"                      // push %rip
+        "jmp 2f;"
+        "1: iretq; 2:"
+        :: "i" (KERNEL_CS), "i" (KERNEL_DS));
+}
+
 void
 ap_init(void)
 {
-	cprintf("Another CPU Running\n");
+    lgdt(&gdt_pd);
+	ltr(GD_TSS(lapic_id()));
+	lidt(&idt_pd);
+	lapic_init_ap();
+
 	while (1) ;
 }

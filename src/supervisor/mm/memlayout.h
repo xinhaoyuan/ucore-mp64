@@ -4,18 +4,18 @@
 /* This file contains the definitions for memory management in our OS. */
 
 /* global segment number */
-#define SEG_KTEXT   1
-#define SEG_KDATA   2
-#define SEG_UTEXT   3
-#define SEG_UDATA   4
-#define SEG_TSS     5
+#define SEG_KTEXT        1
+#define SEG_KDATA        2
+#define SEG_UTEXT        3
+#define SEG_UDATA        4
+#define SEG_TSS(apic_id) 5 + (apic_id)
 
 /* global descrptor numbers */
 #define GD_KTEXT    ((SEG_KTEXT) << 4)      // kernel text
 #define GD_KDATA    ((SEG_KDATA) << 4)      // kernel data
 #define GD_UTEXT    ((SEG_UTEXT) << 4)      // user text
 #define GD_UDATA    ((SEG_UDATA) << 4)      // user data
-#define GD_TSS      ((SEG_TSS) << 4)        // task segment selector
+#define GD_TSS(apic_id) ((SEG_TSS(apic_id)) << 4)        // task segment selector
 
 #define DPL_KERNEL  (0)
 #define DPL_USER    (3)

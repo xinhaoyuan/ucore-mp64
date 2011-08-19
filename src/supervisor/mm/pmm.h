@@ -43,7 +43,7 @@ struct Page *get_page(pgd_t *pgdir, uintptr_t la, pte_t **ptep_store);
 void page_remove(pgd_t *pgdir, uintptr_t la);
 int page_insert(pgd_t *pgdir, struct Page *page, uintptr_t la, uint32_t perm);
 
-void load_rsp0(uintptr_t rsp0);
+void load_rsp0(int apic_id, uintptr_t rsp0);
 void tlb_invalidate(pgd_t *pgdir, uintptr_t la);
 
 void print_pgdir(void);
@@ -153,6 +153,7 @@ page_ref_dec(struct Page *page) {
     return atomic_sub_return(&(page->ref), 1);
 }
 
+extern struct pseudodesc gdt_pd;
 extern char bootstack[], bootstacktop[];
 
 #endif /* !__KERN_MM_PMM_H__ */

@@ -19,7 +19,8 @@ extern lcpu_static_s  lcpu_static[LAPIC_COUNT];
 extern lcpu_dynamic_s lcpu_dynamic[LAPIC_COUNT];
 
 int  lapic_init(void);
-// int  lapic_init_ap(void);
+int  lapic_init_ap(void);
+int  lapic_id();
 void lapic_eoi(void);
 void lapic_start_ap(int apicid, uint32_t addr);
 void lapic_set_timer(uint32_t freq);

@@ -21,7 +21,7 @@ static void print_ticks() {
 
 static struct gatedesc idt[256] = {{0}};
 
-static struct pseudodesc idt_pd = {
+struct pseudodesc idt_pd = {
     sizeof(idt) - 1, (uintptr_t)idt
 };
 
