@@ -34,12 +34,15 @@ kern_init(void) {
 	acpi_conf_init();
 	lapic_init();
 	ioapic_init();
-	
+
+#if 0
     clock_init();               // init clock interrupt
     intr_enable();              // enable irq interrupt
 
 	ioapic_enable(ioapic_id_set[0], IRQ_KBD, 0);
-
+#else
+	mp_init();
+#endif
 	cprintf("ALL DONE!\n");
     /* do nothing */
     while (1);

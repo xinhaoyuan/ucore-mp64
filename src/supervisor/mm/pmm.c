@@ -299,6 +299,8 @@ pmm_init(void) {
 			boot_map_segment(boot_pgdir, memmap->map[i].addr + KERNBASE, memmap->map[i].size, memmap->map[i].addr, PTE_W);
 		}
     }
+	/* and map the first 1MB for the ap booting */
+	boot_map_segment(boot_pgdir, 0, 0x100000, 0, PTE_W);
 
     lcr3(boot_cr3);
 
@@ -310,7 +312,7 @@ pmm_init(void) {
 
     gdt_init();
 
-    check_boot_pgdir();
+    // check_boot_pgdir();
 
     print_pgdir();
 }

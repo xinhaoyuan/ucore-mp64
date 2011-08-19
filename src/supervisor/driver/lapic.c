@@ -41,66 +41,6 @@ lcpu_dynamic_s lcpu_dynamic[LAPIC_COUNT];
 
 #define LAPIC_PERIODIC 10000000
 
-/* static void */
-/* lapicw(int index, int value) */
-/* { */
-/* 	 /\* if (!sysconf.lapic_phys) *\/ */
-/* 	 /\* 	  return; *\/ */
-	 
-/* 	 lapic[index] = value; */
-/* 	 lapic[ID];  // wait for write to finish, by reading */
-/* } */
-
-/* int */
-/* lapic_init_ap(void) */
-/* { */
-/* 	 // Enable local APIC; set spurious interrupt vector. */
-/* 	 lapicw(SVR, ENABLE | (IRQ_OFFSET + IRQ_SPURIOUS)); */
-
-/* 	 // Disable timer */
-/* 	 lapicw(TIMER, MASKED); */
-	 
-/* 	 // Disable logical interrupt lines. */
-/* 	 lapicw(LINT0, MASKED); */
-/* 	 lapicw(LINT1, MASKED); */
-
-/* 	 /\* Disable the TM interrupt *\/ */
-/* 	 if(((lapic[VER] >> 16) & 0xFF) >= 5) */
-/* 		  lapicw(TMINT, MASKED); */
-
-/* 	 // Disable performance counter overflow interrupts */
-/* 	 // on machines that provide that interrupt entry. */
-/* 	 if(((lapic[VER] >> 16) & 0xFF) >= 4) */
-/* 		  lapicw(PCINT, MASKED); */
-
-/* 	 // Map error interrupt to IRQ_ERROR. */
-/* 	 lapicw(ERROR, IRQ_OFFSET + IRQ_ERROR); */
-
-/* 	 // Clear error status register (requires back-to-back writes). */
-/* 	 lapicw(ESR, 0); */
-/* 	 lapicw(ESR, 0); */
-
-/* 	 // Ack any outstanding interrupts. */
-/* 	 lapicw(EOI, 0); */
-
-/* 	 // Send an Init Level De-Assert to synchronise arbitration ID's. */
-/* 	 lapicw(ICRHI, 0); */
-/* 	 lapicw(ICRLO, BCAST | INIT | LEVEL); */
-/* 	 while(lapic[ICRLO] & DELIVS) */
-/* 	 	  ; */
-
-/* 	 // Enable interrupts on the APIC (but not on the processor). */
-/* 	 lapicw(TPR, 0); */
-
-/* 	 // Bochs doesn't support IMCR, so this doesn't run on Bochs. */
-/* 	 // But it would on real hardware. */
-/* 	 /\* outb(0x22, 0x70);   // Select IMCR *\/ */
-/* 	 /\* outb(0x23, inb(0x23) | 1);  // Mask external interrupts. *\/ */
-
-/* 	 return 0; */
-/* } */
-
-
 static uint32_t
 lapicr(int index)
 {
@@ -112,6 +52,55 @@ lapicw(int index, uint32_t value)
 {
 	((volatile uint32_t *)DIRECT_KADDR(sysconf.lapic_phys))[index] = value;
 	return ((volatile uint32_t *)DIRECT_KADDR(sysconf.lapic_phys))[ID];
+}
+
+int
+lapic_init_ap(void)
+{
+	 // Enable local APIC; set spurious interrupt vector.
+	 lapicw(SVR, ENABLE | (IRQ_OFFSET + IRQ_SPURIOUS));
+
+	 // Disable timer
+	 lapicw(TIMER, MASKED);
+	 
+	 // Disable logical interrupt lines.
+	 lapicw(LINT0, MASKED);
+	 lapicw(LINT1, MASKED);
+
+	 /* Disable the TM interrupt */
+	 if(((lapicr(VER) >> 16) & 0xFF) >= 5)
+		  lapicw(TMINT, MASKED);
+
+	 // Disable performance counter overflow interrupts
+	 // on machines that provide that interrupt entry.
+	 if(((lapicr(VER) >> 16) & 0xFF) >= 4)
+		  lapicw(PCINT, MASKED);
+
+	 // Map error interrupt to IRQ_ERROR.
+	 lapicw(ERROR, IRQ_OFFSET + IRQ_ERROR);
+
+	 // Clear error status register (requires back-to-back writes).
+	 lapicw(ESR, 0);
+	 lapicw(ESR, 0);
+
+	 // Ack any outstanding interrupts.
+	 lapicw(EOI, 0);
+
+	 // Send an Init Level De-Assert to synchronise arbitration ID's.
+	 lapicw(ICRHI, 0);
+	 lapicw(ICRLO, BCAST | INIT | LEVEL);
+	 while(lapicr(ICRLO) & DELIVS)
+	 	  ;
+
+	 // Enable interrupts on the APIC (but not on the processor).
+	 lapicw(TPR, 0);
+
+	 // Bochs doesn't support IMCR, so this doesn't run on Bochs.
+	 // But it would on real hardware.
+	 /* outb(0x22, 0x70);   // Select IMCR */
+	 /* outb(0x23, inb(0x23) | 1);  // Mask external interrupts. */
+
+	 return 0;
 }
 
 int
@@ -189,6 +178,7 @@ microdelay(int us)
 void
 lapic_startap(int apicid, uint32_t addr)
 {
+	cprintf("lapic_startap %d %p\n", apicid, addr);
 	int i;
 	uint16_t *wrv;
 	 
@@ -197,9 +187,9 @@ lapic_startap(int apicid, uint32_t addr)
 	// the AP startup code prior to the [universal startup algorithm]."
 	outb(IO_RTC, 0xF);  // offset 0xF is shutdown code
 	outb(IO_RTC+1, 0x0A);
-	wrv = KADDR(0x40 << 4 | 0x67);
+	wrv = DIRECT_KADDR(0x40 << 4 | 0x67);
 	wrv[0] = addr & 0xffff;
-	wrv[1] = (addr ^ wrv[0])  >> 4;
+	wrv[1] = (addr ^ wrv[0]) >> 4;
 
 	// "Universal startup algorithm."
 	// Send INIT (level-triggered) interrupt to reset other CPU.
@@ -243,6 +233,7 @@ lapic_set_timer(uint32_t freq)
 	}
 }
 
+/* XXX */
 int
 send_ipi(int lcpu, int func, int arg0, int arg1, int arg2, int arg3)
 {

@@ -62,13 +62,13 @@ ioapic_init(void)
 	{
 		ioapic_id = ioapic_id_set[i];
 
-		cprintf("IOAPIC %d phys %08x\n", ioapic_id, ioapic[ioapic_id].phys);
+		// cprintf("IOAPIC %d phys %08x\n", ioapic_id, ioapic[ioapic_id].phys);
 		ioapic_mmio = (ioapic_mmio_s *)DIRECT_KADDR(ioapic[ioapic_id].phys);
 
 		int v = ioapic_read(ioapic_mmio, REG_VER);
 		maxintr = (v >> 16) & 0xFF;
-		cprintf("VERSION: %02x\n", v & 0xFF);
-		cprintf("MAXINTR: %d\n", maxintr);
+		// cprintf("VERSION: %02x\n", v & 0xFF);
+		// cprintf("MAXINTR: %d\n", maxintr);
 		if ((v & 0xFF) >= 0x20)
 			sysconf.use_ioapic_eoi = 1;
 		else sysconf.use_ioapic_eoi = 0;

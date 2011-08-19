@@ -6,17 +6,28 @@ OUTPUT_ARCH(i386:x86-64)
 ENTRY(kern_entry32)
 
 KERNEL_BASE = 0xFFFF800000000000;
+ENTRY32_BASE  = 0x00200000;
+BOOT_AP_BASE  = 0x00008000;
+BOOT_AP_MAGIC = 0x001F8000;
 
 SECTIONS {
-    /* Load the kernel at this address: "." means the current address */
-	. = 0x00200000;
 
-    .entry32 : {
+	. = 0x8000;
+
+	PROVIDE(boot_ap_entry_64 = . + BOOT_AP_MAGIC + KERNEL_BASE);
+
+    .boot_ap : AT(ADDR(.boot_ap) + BOOT_AP_MAGIC) {
+        *boot_1ap.S.o*(.text .rodata .data)
+    }
+
+	. = ALIGN(0x1000);
+	. += BOOT_AP_MAGIC;
+
+    .entry32 : AT(ADDR(.entry32)) {
         *entry32.S.o*(.text .rodata .data)
     }
 
     . = ALIGN(0x1000);
-
     . += KERNEL_BASE;
 
     .text : AT(ADDR(.text) - KERNEL_BASE) {
