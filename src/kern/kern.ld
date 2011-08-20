@@ -1,6 +1,6 @@
 OUTPUT_FORMAT("elf64-x86-64", "elf64-x86-64", "elf64-x86-64")
 OUTPUT_ARCH(i386:x86-64)
-ENTRY(entry)
+ENTRY(__kern_entry)
 
 KERNEL_BASE = 0xFFFFFFFF80000000;
 
@@ -8,32 +8,35 @@ SECTIONS {
 
 	. = KERNEL_BASE;
 
-	PROVIDE(kern_start = .);
+	.bootinfo : { *bootinfo.S.o(.*) }
+
+	. = ALIGN(0x1000);
+	PROVIDE(__kern_text_start = .);
 
     .text : {
         *(.text .stub .text.* .gnu.linkonce.t.*)
     }
 
+	. = ALIGN(0x1000);
+	PROVIDE(__kern_ro_start = .);
     .rodata : {
         *(.rodata .rodata.* .gnu.linkonce.r.*)
     }
 
-    /* Adjust the address for the data segment to the next page */
-    . = ALIGN(0x1000);
-
-	PROVIDE(kern_ro_end = .);
-
+	. = ALIGN(0x1000);
+	PROVIDE(__kern_data_start = .);
     .data : {
         *(.data)
     }
 
+	. = ALIGN(0x1000);
+	PROVIDE(__kern_bss_start = .);
     .bss : {
         *(.bss)
     }
 
 	. = ALIGN(0x1000);
-
-	PROVIDE(kern_end = .);
+	PROVIDE(__kern_end = .);
 
     /DISCARD/ : {
         *(.eh_frame .note.GNU-stack)

@@ -1,7 +1,7 @@
 .PHONY: all
 
 SRCFILES   := $(shell find . '(' '!' -regex '/_.*' ')' -and '(' -iname "*.c" -or -iname "*.S" ')' | sed -e 's!\./!!g')
-T_CC_ALL_FLAGS := -Os -I.
+T_CC_ALL_FLAGS := -Os -I. -DKERN_START_SECT=$(shell echo $(shell cat ${T_BIN}/kern-sect_size) + 1 | bc)
 
 include ${T_BASE}/mk/compbl.mk
 include ${T_BASE}/mk/template.mk

@@ -71,8 +71,8 @@ readseg(uintptr_t pa, uint32_t count, uint32_t offset) {
     // round down to sector boundary
     pa -= offset % SECTSIZE;
 
-    // translate from bytes to sectors; kernel starts at sector 1
-    uint32_t secno = (offset / SECTSIZE) + 1;
+    // translate from bytes to sectors; kernel starts at sector KERN_START_SECT
+    uint32_t secno = (offset / SECTSIZE) + KERN_START_SECT;
 
     // If this is too slow, we could read lots of sectors at a time.
     // We'd write more to memory than asked, but it doesn't matter --

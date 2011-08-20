@@ -10,4 +10,4 @@ all: ${T_BIN}/supervisor
 
 ${T_BIN}/supervisor: ${OBJFILES} supervisor.ld
 	@echo LD $@
-	${V}${LD} -T supervisor.ld -z max-page-size=0x1000 -o$@ $^ ${T_BIN}/libs-sv-*.o ${T_BIN}/kern-bin.o
+	${V}${LD} -T supervisor.ld -z max-page-size=0x1000 -o$@ $^ ${T_BIN}/libs-sv-*.o

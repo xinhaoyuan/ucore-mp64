@@ -4,6 +4,7 @@
 #include <lapic.h>
 #include <trap.h>
 #include <clock.h>
+#include <kern.h>
 
 void
 lcpu_init(void)
@@ -16,5 +17,5 @@ lcpu_init(void)
 		ioapic_enable(ioapic_id_set[0], IRQ_KBD, 0);
 	}
 
-	while (1) ;
+	jump_kern();
 }

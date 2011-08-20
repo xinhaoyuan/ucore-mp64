@@ -44,6 +44,9 @@ kern_init(void) {
 	lapic_init();
 	ioapic_init();
 
+	ide_init();
+	load_kern();
+
 	mp_init();
 
 	lcpu_init();

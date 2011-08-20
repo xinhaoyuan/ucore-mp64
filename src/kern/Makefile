@@ -6,15 +6,12 @@ T_CC_FLAGS := -I../libs -I.
 include ${T_BASE}/mk/compk.mk
 include ${T_BASE}/mk/template.mk
 
-all: ${T_BIN}/kern-bin.o
-
-${T_BIN}/kern-bin.o: ${T_BIN}/kern-bin
-	@echo OBJCOPY $@
-	${V}cd ${T_BIN}; ${OBJCOPY} -I binary -O elf64-x86-64 -B i386 $(notdir $<) $@
+all: ${T_BIN}/kern-bin
 
 ${T_BIN}/kern-bin: ${T_BIN}/kern
 	@echo OBJCOPY $@
 	${V}${OBJCOPY} -S -O binary $^ $@
+	@T_BIN=${T_BIN} sh ${T_BASE}/misc/kerninfo.sh
 
 ${T_BIN}/kern: ${OBJFILES} kern.ld
 	@echo LD $@
