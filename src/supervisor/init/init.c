@@ -19,8 +19,8 @@ void kern_init(void) __attribute__((noreturn));
 
 void
 kern_init(void) {
-    extern char edata[], end[];
-    memset(edata, 0, end - edata);
+    extern char __edata[], __end[];
+    memset(__edata, 0, __end - __edata);
 
     cons_init();                // init the console
 

@@ -13,13 +13,13 @@
  * */
 void
 print_kerninfo(void) {
-    extern char etext[], edata[], end[], kern_init[];
+    extern char __etext[], __edata[], __end[], kern_init[];
     cprintf("Special kernel symbols:\n");
     cprintf("  entry  0x%08x (phys)\n", kern_init);
-    cprintf("  etext  0x%08x (phys)\n", etext);
-    cprintf("  edata  0x%08x (phys)\n", edata);
-    cprintf("  end    0x%08x (phys)\n", end);
-    cprintf("Kernel executable memory footprint: %dKB\n", (end - kern_init + 1023)/1024);
+    cprintf("  etext  0x%08x (phys)\n", __etext);
+    cprintf("  edata  0x%08x (phys)\n", __edata);
+    cprintf("  end    0x%08x (phys)\n", __end);
+    cprintf("Kernel executable memory footprint: %dKB\n", (__end - kern_init + 1023)/1024);
 }
 
 static uint64_t read_rip(void) __attribute__((noinline));

@@ -10,6 +10,7 @@
 #include <error.h>
 #include <lapic.h>
 #include <sysconf.h>
+#include <memmap.h>
 
 /* *
  * Task State Segment:
@@ -188,6 +189,8 @@ static void
 page_init(void) {
     struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);
     uint64_t maxpa = 0;
+
+	memmap_reset();
 	
     cprintf("e820map:\n");
     int i;
@@ -195,6 +198,9 @@ page_init(void) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
         cprintf("  memory: %016llx, [%016llx, %016llx], type = %d.\n",
                 memmap->map[i].size, begin, end - 1, memmap->map[i].type);
+
+		memmap_append(begin, end, memmap->map[i].type);
+
         if (memmap->map[i].type == E820_ARM) {
             if (maxpa < end && begin < KMEMSIZE) {
                 maxpa = end;
@@ -205,10 +211,11 @@ page_init(void) {
         maxpa = KMEMSIZE;
     }
 
-    extern char end[];
+	memmap_process(0);
+    extern char __end[];
 
     npage = maxpa / PGSIZE;
-    pages = (struct Page *)ROUNDUP(KADDR((uintptr_t)end), PGSIZE);
+    pages = (struct Page *)ROUNDUP(KADDR((uintptr_t)__end), PGSIZE);
 
     for (i = 0; i < npage; i ++) {
         SetPageReserved(pages + i);

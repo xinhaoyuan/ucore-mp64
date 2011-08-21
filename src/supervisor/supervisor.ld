@@ -34,7 +34,7 @@ SECTIONS {
         *(.text .stub .text.* .gnu.linkonce.t.*)
     }
 
-    PROVIDE(etext = . - KERNEL_BASE); /* Define the 'etext' symbol to this value */
+    PROVIDE(__etext = . - KERNEL_BASE); /* Define the 'etext' symbol to this value */
 
     .rodata : AT(ADDR(.rodata) - KERNEL_BASE) {
         *(.rodata .rodata.* .gnu.linkonce.r.*)
@@ -54,13 +54,13 @@ SECTIONS {
         *(.data)
     }
 
-    PROVIDE(edata = . - KERNEL_BASE);
+    PROVIDE(__edata = . - KERNEL_BASE);
 
     .bss : AT(ADDR(.bss) - KERNEL_BASE) {
         *(.bss)
     }
 
-    PROVIDE(end = . - KERNEL_BASE);
+    PROVIDE(__end = . - KERNEL_BASE);
 
     /DISCARD/ : {
         *(.eh_frame .note.GNU-stack)
