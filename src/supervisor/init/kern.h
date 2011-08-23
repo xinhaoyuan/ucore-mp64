@@ -27,4 +27,6 @@ extern kern_bootinfo_s kern_bootinfo;
 void load_kern(void);
 void jump_kern(void) __attribute__((noreturn));
 
+#define EXPORT_SYMBOL(sym) char __TO_EXPORT_##sym[0] __attribute((unused));
+
 #endif

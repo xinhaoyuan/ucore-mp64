@@ -37,6 +37,8 @@ struct Zone {
     struct Page *mem_base;
 } zones[MAX_ZONE_NUM] = {{NULL}};
 
+static void buddy_free_pages(struct Page *base, size_t n);
+
 //buddy_init - init the free_list(0 ~ MAX_ORDER) & reset nr_free(0 ~ MAX_ORDER)
 static void
 buddy_init(void) {
@@ -122,7 +124,7 @@ buddy_alloc_pages(size_t n) {
     size_t order = getorder(n), order_size = (1 << order);
     struct Page *page = buddy_alloc_pages_sub(order);
     if (page != NULL && n != order_size) {
-        free_pages(page + n, order_size - n);
+        buddy_free_pages(page + n, order_size - n);
     }
     return page;
 }

@@ -11,6 +11,7 @@
 #include <lapic.h>
 #include <sysconf.h>
 #include <memmap.h>
+#include <spinlock.h>
 
 /* *
  * Task State Segment:
@@ -46,6 +47,7 @@ uintptr_t boot_cr3;
 
 // physical memory management
 const struct pmm_manager *pmm_manager;
+static spinlock_s pmm_lock;
 
 pte_t * const vpt = (pte_t *)VPT;
 pmd_t * const vmd = (pmd_t *)PGADDR(PGX(VPT), PGX(VPT), 0, 0, 0);
@@ -138,6 +140,7 @@ init_pmm_manager(void) {
     pmm_manager = &buddy_pmm_manager;
     cprintf("memory management: %s\n", pmm_manager->name);
     pmm_manager->init();
+	spinlock_init(&pmm_lock);
 }
 
 //init_memmap - call pmm->init_memmap to build Page struct for free memory  
@@ -152,9 +155,11 @@ alloc_pages(size_t n) {
     struct Page *page;
     bool intr_flag;
     local_intr_save(intr_flag);
+	spinlock_acquire(&pmm_lock);
     {
         page = pmm_manager->alloc_pages(n);
     }
+	spinlock_release(&pmm_lock);
     local_intr_restore(intr_flag);
     return page;
 }
@@ -164,9 +169,11 @@ void
 free_pages(struct Page *base, size_t n) {
     bool intr_flag;
     local_intr_save(intr_flag);
+	spinlock_acquire(&pmm_lock);
     {
         pmm_manager->free_pages(base, n);
     }
+	spinlock_release(&pmm_lock);
     local_intr_restore(intr_flag);
 }
 
@@ -177,9 +184,11 @@ nr_free_pages(void) {
     size_t ret;
     bool intr_flag;
     local_intr_save(intr_flag);
+	spinlock_acquire(&pmm_lock);
     {
         ret = pmm_manager->nr_free_pages();
     }
+	spinlock_release(&pmm_lock);
     local_intr_restore(intr_flag);
     return ret;
 }

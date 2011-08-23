@@ -2,11 +2,14 @@
 #define __LAPIC_H__
 
 #include <types.h>
+#include <mmu.h>
+#include <pmm.h>
+
 #define LAPIC_COUNT 256
 
 typedef struct lcpu_static_s
 {
-	int foo;
+	pgd_t *init_pgdir;
 } lcpu_static_s;
 
 typedef struct lcpu_dynamic_s

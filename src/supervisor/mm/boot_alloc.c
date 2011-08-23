@@ -2,6 +2,11 @@
 #include <stdio.h>
 #include <pmm.h>
 
+/* Boot alloc is a naive allocator that get free memory directly after
+ * the kernel data. There are symbol provided in the link-script which
+ * indicate the end address of kernel, then the allocator would follow
+ * the address to allocate memory blocks */
+
 static uintptr_t boot_free;
 static int       bf_memmap;
 
