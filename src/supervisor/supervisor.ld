@@ -43,12 +43,6 @@ SECTIONS {
     /* Adjust the address for the data segment to the next page */
     . = ALIGN(0x1000);
 
-	.kernbin : AT(ADDR(.kernbin) - KERNEL_BASE) {
-		*kern-bin.o.*(.data)
-	}
-
-	. = ALIGN(0x1000);
-
     /* The data segment */
     .data : AT(ADDR(.data) - KERNEL_BASE) {
         *(.data)
