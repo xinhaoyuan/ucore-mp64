@@ -1,7 +1,12 @@
 #include <memlayout.h>
 		
 		.text
-
+		.global __context_deadend
+__context_deadend:
+		movq    %ss:0x08(%rsp), %rdi
+		movq    $0, %ss:0(%rsp)
+		jmp     context_deadend
+		
 		.global __context_init
 __context_init:
 		movq    %ss:0x10(%rsp), %rdi

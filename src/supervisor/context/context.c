@@ -1,18 +1,44 @@
 #include <context.h>
 #include <lapic.h>
 
-extern void __context_switch(uintptr_t *from_esp, uintptr_t *from_pc, uintptr_t to_esp, uintptr_t to_pc) __attribute__((regparm(0)));
-extern void __context_init(void) __attribute__((regparm(0)));
+extern void __context_switch(uintptr_t *from_esp, uintptr_t *from_pc, uintptr_t to_esp, uintptr_t to_pc);
+extern void __context_init(void);
+extern void __context_deadend(void);
+
+context_s ca, cb;
+
+void ea(void *arg)
+{
+	cprintf("EA %p\n", arg);
+	context_switch(&ca, &cb);
+}
+
+void eb(void *arg)
+{
+	cprintf("EB %p\n", arg);
+	context_switch(&cb, &ca);
+}
 
 int
 context_init(void)
 {
+#if 0
+	/* Simple test */
+	cprintf("CONTEXT %p %p\n", &ca, &cb);
+
+	context_fill(&ca, ea, (void *)0xdead, 0, (uintptr_t)page2kva(alloc_page()));
+	context_fill(&cb, eb, (void *)0x1234, 0, (uintptr_t)page2kva(alloc_page()));
+	
+	context_switch(NULL, &ca);	
+#endif
+	
 	return 0;
 }
 
-static void
-__context_deadend(context_t ctx)
+void
+context_deadend(context_t ctx)
 {
+	cprintf("CONTEXT %p FALL INTO DEAD END\n", ctx);
 	while (1) ;
 }
 
@@ -27,13 +53,6 @@ context_fill(context_t ctx, void (*entry)(void *arg), void *arg, uintptr_t vpt, 
 	 
 	ctx->stk_ptr -= sizeof(void *);
 	*(void **)ctx->stk_ptr = ctx;
-
-	ctx->stk_ptr -= sizeof(void *);
-	*(void **)ctx->stk_ptr = NULL;
-
-	ctx->stk_ptr -= sizeof(uintptr_t);
-	*(uintptr_t *)ctx->stk_ptr = 0;
-	uintptr_t ebp = ctx->stk_ptr;
 
 	ctx->stk_ptr -= sizeof(void *);
 	*(void **)ctx->stk_ptr = arg;
