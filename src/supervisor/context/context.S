@@ -4,7 +4,7 @@
 
 		.global __context_init
 __context_init:
-		movq    %ss:0x8(%rsp), %rdi
+		movq    %ss:0x10(%rsp), %rdi
 		movq 	$0, %rbp
 		ret
 		

@@ -4,36 +4,9 @@
 extern void __context_switch(uintptr_t *from_esp, uintptr_t *from_pc, uintptr_t to_esp, uintptr_t to_pc) __attribute__((regparm(0)));
 extern void __context_init(void) __attribute__((regparm(0)));
 
-context_s a, b;
-
-void
-e1(void *arg)
-{
-	while (1)
-	{
-		cprintf("HELLO FROM e1\n");
-		context_switch(&a, &b);
-	}
-}
-
-void
-e2(void *arg)
-{
-	while (1)
-	{
-		cprintf("HELLO FROM e2\n");
-		context_switch(&b, &a);
-	}
-}
-
 int
 context_init(void)
 {
-	context_fill(&a, e1, NULL, 0, page2kva(alloc_page()));
-	context_fill(&b, e2, NULL, 0, page2kva(alloc_page()));
-
-	context_switch(NULL, &a);
-	
 	return 0;
 }
 
