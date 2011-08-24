@@ -40,6 +40,8 @@ kern_init(void) {
     pic_init();                 // init interrupt controller
     idt_init();                 // init interrupt descriptor table
 
+	context_init();
+
 	acpi_conf_init();
 	lapic_init();
 	ioapic_init();

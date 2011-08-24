@@ -4,16 +4,19 @@
 
 		.global __context_init
 __context_init:
+		movq    %ss:0x8(%rsp), %rdi
 		movq 	$0, %rbp
 		ret
 		
 		.global __context_switch
 
 __context_switch:
-		movq	%ss:8 (%esp), %rax   // from_esp_ptr
-		movq    %ss:16(%esp), %rbx
-		movq    %ss:24(%esp), %rcx   // to_esp
-		movq    %ss:32(%esp), %rdx
+		# Search about the calling convention of X86_64
+		# (%rdi, %rsi, %rdx, %rcx)
+		# movq	  %rdi, %rax   // from_esp_ptr
+		# movq    %rsi, %rbx
+		# movq    %rdx, %rdx   // to_esp
+		# movq    %rcx, %rcx
 
 		# no pusha in x86_64
 #if CONTEXT_SWITCH_FEW_SAVE
@@ -37,11 +40,11 @@ __context_switch:
 #endif
 		pushf
 	
-		movq	%rsp, 0(%rax)
+		movq	%rsp, 0(%rdi)
 		movabs  $__context_switch_ret, %rax
-		movq    %rax, 0(%rbx)
-		movq    %rcx, %rsp
-		jmp     *%rdx
+		movq    %rax, 0(%rsi)
+		movq    %rdx, %rsp
+		jmp     *%rcx
 
 __context_switch_ret:
 		popf

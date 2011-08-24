@@ -17,4 +17,5 @@ clean:
 
 qemu: all
 	qemu-system-x86_64 -smp 4 ${T_BIN}/image \
+	-s -S \
 	-serial file:bin/serial.log -monitor stdio
