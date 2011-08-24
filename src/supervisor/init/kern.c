@@ -9,13 +9,27 @@
 kern_bootinfo_s kern_bootinfo;
 char *kern_data;
 
+static void
+read_secs(unsigned short ideno, uint32_t secno, void *dst, size_t nsecs)
+{
+	while (nsecs > 0)
+	{
+		size_t curn = nsecs > 64 ? 64 : nsecs;
+		ide_read_secs(ideno, secno, dst, curn);
+
+		nsecs -= curn;
+		secno += curn;
+		dst    = (char *)dst + curn * SECTSIZE;
+	}
+}
+
 void
 load_kern(void)
 {
 	ide_read_secs(0, 1, &kern_bootinfo, PGSIZE / SECTSIZE);
 	uintptr_t kern_data_size = kern_bootinfo.kern_bss - kern_bootinfo.kern_text;
 	kern_data = page2kva(alloc_pages(kern_data_size / PGSIZE));
-	ide_read_secs(
+	read_secs(
 		0,
 		1 + (kern_bootinfo.kern_text - kern_bootinfo.kern_start) / SECTSIZE,
 		kern_data,

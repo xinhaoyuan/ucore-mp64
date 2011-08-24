@@ -1,4 +1,5 @@
-#include <stdio.h>
+#include <kio.h>
+#include <mp.h>
 
 void
 __kern_entry(void)

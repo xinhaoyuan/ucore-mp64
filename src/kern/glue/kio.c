@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <kio.h>
 
 int
 kprintf(const char *fmt, ...)

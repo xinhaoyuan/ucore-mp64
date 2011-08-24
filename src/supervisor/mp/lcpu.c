@@ -16,6 +16,6 @@ lcpu_init(void)
 		
 		ioapic_enable(ioapic_id_set[0], IRQ_KBD, 0);
 	}
-
+	
 	jump_kern();
 }

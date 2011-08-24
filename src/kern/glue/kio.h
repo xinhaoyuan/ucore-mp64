@@ -1,5 +1,5 @@
-#ifndef __GLUE_STDIO_H__
-#define __GLUE_STDIO_H__
+#ifndef __GLUE_KIO_H__
+#define __GLUE_KIO_H__
 
 #include <types.h>
 #include <stdarg.h>
