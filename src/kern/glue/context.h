@@ -1,4 +1,6 @@
-#include <stdarg.h>
+#ifndef __GLUE_CONTEXT_H__
+#define __GLUE_CONTEXT_H__
+
 #include <types.h>
 
 /* Symbols from supervisor */
@@ -21,23 +23,5 @@ extern void (*context_switch)(context_t from, context_t to);
 extern void (*context_fill)(context_t ctx,
 							void (*entry)(void *arg), void *arg,
 							uintptr_t vpt, uintptr_t stk_top);
-extern int (*vkprintf)(const char *fmt, va_list ap);
-extern int (*lapic_id)(void);
 
-int
-kprintf(const char *fmt, ...)
-{
-	va_list ap;
-    int cnt;
-    va_start(ap, fmt);
-    cnt = vkprintf(fmt, ap);
-    va_end(ap);
-    return cnt;
-}
-
-void
-__kern_entry(void)
-{
-	kprintf("HELLO FROM %d!\n", lapic_id());
-	while (1) ;
-}
+#endif

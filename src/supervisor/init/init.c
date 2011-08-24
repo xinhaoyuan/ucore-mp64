@@ -14,6 +14,7 @@
 #include <sysconf.h>
 #include <x86.h>
 #include <lcpu.h>
+#include <cpuid.h>
 
 void kern_init(void) __attribute__((noreturn));
 

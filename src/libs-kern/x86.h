@@ -3,23 +3,6 @@
 
 #include <types.h>
 
-static inline void
-cpuid(uint32_t info, uint32_t *eaxp, uint32_t *ebxp, uint32_t *ecxp, uint32_t *edxp)
-{
-     uint32_t eax, ebx, ecx, edx;
-     asm volatile("cpuid" 
-		  : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)
-		  : "a" (info));
-     if (eaxp)
-	  *eaxp = eax;
-     if (ebxp)
-	  *ebxp = ebx;
-     if (ecxp)
-	  *ecxp = ecx;
-     if (edxp)
-	  *edxp = edx;
-}
-
 #define barrier() __asm__ __volatile__ ("" ::: "memory")
 
 static inline uint8_t inb(uint16_t port) __attribute__((always_inline));
@@ -319,3 +302,4 @@ __memcpy(void *dst, const void *src, size_t n) {
 #endif /* __HAVE_ARCH_MEMCPY */
 
 #endif /* !__LIBS_X86_H__ */
+

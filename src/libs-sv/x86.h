@@ -3,23 +3,6 @@
 
 #include <types.h>
 
-static inline void
-cpuid(uint32_t info, uint32_t *eaxp, uint32_t *ebxp, uint32_t *ecxp, uint32_t *edxp)
-{
-     uint32_t eax, ebx, ecx, edx;
-     asm volatile("cpuid" 
-		  : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)
-		  : "a" (info));
-     if (eaxp)
-	  *eaxp = eax;
-     if (ebxp)
-	  *ebxp = ebx;
-     if (ecxp)
-	  *ecxp = ecx;
-     if (edxp)
-	  *edxp = edx;
-}
-
 #define barrier() __asm__ __volatile__ ("" ::: "memory")
 
 static inline uint8_t inb(uint16_t port) __attribute__((always_inline));
@@ -41,8 +24,6 @@ static inline void ltr(uint16_t sel) __attribute__((always_inline));
 static inline void lcr0(uintptr_t cr0) __attribute__((always_inline));
 static inline void lcr3(uintptr_t cr3) __attribute__((always_inline));
 static inline uintptr_t rcr0(void) __attribute__((always_inline));
-static inline uintptr_t rcr1(void) __attribute__((always_inline));
-static inline uintptr_t rcr2(void) __attribute__((always_inline));
 static inline uintptr_t rcr3(void) __attribute__((always_inline));
 static inline void invlpg(void *addr) __attribute__((always_inline));
 
@@ -118,20 +99,6 @@ rcr0(void) {
     uintptr_t cr0;
     asm volatile ("mov %%cr0, %0" : "=r" (cr0) :: "memory");
     return cr0;
-}
-
-static inline uintptr_t
-rcr1(void) {
-    uintptr_t cr1;
-    asm volatile ("mov %%cr1, %0" : "=r" (cr1) :: "memory");
-    return cr1;
-}
-
-static inline uintptr_t
-rcr2(void) {
-    uintptr_t cr2;
-    asm volatile ("mov %%cr2, %0" : "=r" (cr2) :: "memory");
-    return cr2;
 }
 
 static inline uintptr_t
@@ -319,3 +286,4 @@ __memcpy(void *dst, const void *src, size_t n) {
 #endif /* __HAVE_ARCH_MEMCPY */
 
 #endif /* !__LIBS_X86_H__ */
+
