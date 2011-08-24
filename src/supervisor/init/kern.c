@@ -4,6 +4,7 @@
 #include <mmu.h>
 #include <lapic.h>
 #include <x86.h>
+#include <spinlock.h>
 
 kern_bootinfo_s kern_bootinfo;
 char *kern_data;
@@ -20,6 +21,8 @@ load_kern(void)
 		kern_data,
 		kern_data_size / SECTSIZE);
 }
+
+spinlock_s kprintf_lock;
 
 void
 jump_kern(void)
@@ -52,11 +55,31 @@ jump_kern(void)
 			kern_bootinfo.kern_bss - kern_bootinfo.kern_data);
 	memset((void *)kern_bootinfo.kern_bss,
 		   0, kern_bootinfo.kern_end - kern_bootinfo.kern_bss);
-	
+
+	spinlock_init(&kprintf_lock);
 	((void(*)(void))kern_bootinfo.kern_entry)();
 	
 	while (1) ;
 }
 
-EXPORT_SYMBOL(cprintf);
+#include <stdarg.h>
+#include <sync.h>
+
+int
+vkprintf(const char *fmt, va_list ap)
+{
+	bool intr_save;
+	
+	local_intr_save(intr_save);
+	spinlock_acquire(&kprintf_lock);
+	int cnt = vcprintf(fmt, ap);
+	spinlock_release(&kprintf_lock);
+	local_intr_restore(intr_save);
+
+	return cnt;
+}
+
+EXPORT_SYMBOL(context_fill);
+EXPORT_SYMBOL(context_switch);
+EXPORT_SYMBOL(vkprintf);
 EXPORT_SYMBOL(lapic_id);

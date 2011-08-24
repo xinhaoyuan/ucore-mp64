@@ -7,13 +7,15 @@ extern void __context_deadend(void);
 
 context_s ca, cb;
 
-void ea(void *arg)
+static void
+ea(void *arg)
 {
 	cprintf("EA %p\n", arg);
 	context_switch(&ca, &cb);
 }
 
-void eb(void *arg)
+static void
+eb(void *arg)
 {
 	cprintf("EB %p\n", arg);
 	context_switch(&cb, &ca);
