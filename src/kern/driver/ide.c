@@ -1,12 +1,12 @@
 #include <types.h>
 #include <stdio.h>
 #include <trap.h>
-#include <picirq.h>
 #include <fs.h>
 #include <ide.h>
 #include <x86.h>
 #include <sem.h>
 #include <assert.h>
+#include <kio.h>
 
 #define ISA_DATA                0x00
 #define ISA_ERROR               0x01
@@ -145,12 +145,14 @@ ide_init(void) {
             model[i] = '\0';
         } while (i -- > 0 && model[i] == ' ');
 
-        cprintf("ide %d: %10u(sectors), '%s'.\n", ideno, ide_devices[ideno].size, ide_devices[ideno].model);
+        kprintf("ide %d: %10u(sectors), '%s'.\n", ideno, ide_devices[ideno].size, ide_devices[ideno].model);
     }
 
     // enable ide interrupt
+#if 0
     pic_enable(IRQ_IDE1);
     pic_enable(IRQ_IDE2);
+#endif
 
     sem_init(&(channels[0].sem), 1);
     sem_init(&(channels[1].sem), 1);

@@ -12,6 +12,7 @@
 #include <stat.h>
 #include <dirent.h>
 #include <sysfile.h>
+#include <kio.h>
 
 static uint64_t
 sys_exit(uint64_t arg[]) {
@@ -117,7 +118,7 @@ sys_shmem(uint64_t arg[]) {
 static uint64_t
 sys_putc(uint64_t arg[]) {
     int c = (int)arg[0];
-    cputchar(c);
+    kputchar(c);
     return 0;
 }
 

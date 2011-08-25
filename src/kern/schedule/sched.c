@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <sched_MLFQ.h>
+#include <kio.h>
 
 static list_entry_t timer_list;
 
@@ -58,7 +59,7 @@ sched_init(void) {
     sched_class = &MLFQ_sched_class;
     sched_class->init(rq);
 
-    cprintf("sched class: %s\n", sched_class->name);
+    kprintf("sched class: %s\n", sched_class->name);
 }
 
 void

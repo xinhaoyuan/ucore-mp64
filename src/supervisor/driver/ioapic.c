@@ -111,15 +111,10 @@ ioapic_init(void)
 
 // XXX THIS ROUTINE IS BUGGY
 void
-ioapic_send_eoi(int irq)
+ioapic_send_eoi(int apic_id, int irq)
 {
-#if 0
-	cprintf("ioapic eoi %d\n", irq);
-	ioapic_mmio_s *ioapic;
-	BEGIN_TPAGE(0xFEC00000, ioapic);
-	ioapic->eoi = irq & 0xFF;
-	END_TPAGE;
-#endif
+	ioapic_mmio_s *ioapic_mmio = (ioapic_mmio_s *)DIRECT_KADDR(ioapic[apic_id].phys);
+	ioapic_mmio->eoi = irq & 0xFF;
 }
 
 void

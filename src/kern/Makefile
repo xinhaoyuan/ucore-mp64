@@ -26,7 +26,7 @@ ${T_BIN}/kern-svsym.S: ${T_BIN}/svsym.o
 	@echo GEN $@
 	${V}echo ".data\n.align 8\n" > $@
 	${V}objdump -t $< -j .text -j .rodata -j .data -j .bss \
-		| sed -n -e 's/^\([0-9a-f][0-9a-f]*\).* \([a-zA-Z0-9_][a-zA-Z0-9_]*\)$$/\2: .quad 0x\1/gp' \
+		| sed -n -e 's/^\([0-9a-f][0-9a-f]*\).* \([a-zA-Z0-9_][a-zA-Z0-9_]*\)$$/\2_ptr: .quad 0x\1/gp' \
 		| sed -e 's/__TO_EXPORT_\([a-zA-Z0-9_][a-zA-Z0-9_]*\).*/.global \1/g' >> $@
 
 ${T_BIN}/kern-svsym.S.o: ${T_BIN}/kern-svsym.S

@@ -26,6 +26,7 @@
 #define T_ALIGN                 17  // aligment check
 #define T_MCHK                  18  // machine check
 #define T_SIMDERR               19  // SIMD floating point error
+#define EXCEPTION_COUNT         32
 
 /* Hardware IRQ numbers. We receive these as (IRQ_OFFSET + IRQ_xx) */
 #define IRQ_OFFSET              32  // IRQ 0 corresponds to int IRQ_OFFSET
@@ -37,6 +38,8 @@
 #define IRQ_IDE2                15
 #define IRQ_ERROR               19
 #define IRQ_SPURIOUS            31
+
+#define IRQ_COUNT               32
 
 /* registers as pushed by pushal */
 struct pushregs {

@@ -1,7 +1,6 @@
 #include <types.h>
 #include <mmu.h>
 #include <memlayout.h>
-#include <clock.h>
 #include <trap.h>
 #include <x86.h>
 #include <stdio.h>
@@ -9,13 +8,13 @@
 #include <assert.h>
 #include <sync.h>
 #include <monitor.h>
-#include <console.h>
 #include <vmm.h>
 #include <proc.h>
 #include <sched.h>
 #include <unistd.h>
 #include <syscall.h>
 #include <error.h>
+#include <kio.h>
 
 #define TICK_NUM 30
 
@@ -86,44 +85,44 @@ static const char *IA32flags[] = {
 
 void
 print_trapframe(struct trapframe *tf) {
-    cprintf("trapframe at %p\n", tf);
+    kprintf("trapframe at %p\n", tf);
     print_regs(&tf->tf_regs);
-    cprintf("  trap 0x--------%08x %s\n", tf->tf_trapno, trapname(tf->tf_trapno));
-    cprintf("  err  0x%016llx\n", tf->tf_err);
-    cprintf("  rip  0x%016llx\n", tf->tf_rip);
-    cprintf("  cs   0x------------%04x\n", tf->tf_cs);
-    cprintf("  ds   0x------------%04x\n", tf->tf_ds);
-    cprintf("  es   0x------------%04x\n", tf->tf_es);
-    cprintf("  flag 0x%016llx\n", tf->tf_rflags);
-    cprintf("  rsp  0x%016llx\n", tf->tf_rsp);
-    cprintf("  ss   0x------------%04x\n", tf->tf_ss);
+    kprintf("  trap 0x--------%08x %s\n", tf->tf_trapno, trapname(tf->tf_trapno));
+    kprintf("  err  0x%016llx\n", tf->tf_err);
+    kprintf("  rip  0x%016llx\n", tf->tf_rip);
+    kprintf("  cs   0x------------%04x\n", tf->tf_cs);
+    kprintf("  ds   0x------------%04x\n", tf->tf_ds);
+    kprintf("  es   0x------------%04x\n", tf->tf_es);
+    kprintf("  flag 0x%016llx\n", tf->tf_rflags);
+    kprintf("  rsp  0x%016llx\n", tf->tf_rsp);
+    kprintf("  ss   0x------------%04x\n", tf->tf_ss);
 
     int i, j;
     for (i = 0, j = 1; i < sizeof(IA32flags) / sizeof(IA32flags[0]); i ++, j <<= 1) {
         if ((tf->tf_rflags & j) && IA32flags[i] != NULL) {
-            cprintf("%s,", IA32flags[i]);
+            kprintf("%s,", IA32flags[i]);
         }
     }
-    cprintf("IOPL=%d\n", (tf->tf_rflags & FL_IOPL_MASK) >> 12);
+    kprintf("IOPL=%d\n", (tf->tf_rflags & FL_IOPL_MASK) >> 12);
 }
 
 void
 print_regs(struct pushregs *regs) {
-    cprintf("  rdi  0x%016llx\n", regs->reg_rdi);
-    cprintf("  rsi  0x%016llx\n", regs->reg_rsi);
-    cprintf("  rdx  0x%016llx\n", regs->reg_rdx);
-    cprintf("  rcx  0x%016llx\n", regs->reg_rcx);
-    cprintf("  rax  0x%016llx\n", regs->reg_rax);
-    cprintf("  r8   0x%016llx\n", regs->reg_r8);
-    cprintf("  r9   0x%016llx\n", regs->reg_r9);
-    cprintf("  r10  0x%016llx\n", regs->reg_r10);
-    cprintf("  r11  0x%016llx\n", regs->reg_r11);
-    cprintf("  rbx  0x%016llx\n", regs->reg_rbx);
-    cprintf("  rbp  0x%016llx\n", regs->reg_rbp);
-    cprintf("  r12  0x%016llx\n", regs->reg_r12);
-    cprintf("  r13  0x%016llx\n", regs->reg_r13);
-    cprintf("  r14  0x%016llx\n", regs->reg_r14);
-    cprintf("  r15  0x%016llx\n", regs->reg_r15);
+    kprintf("  rdi  0x%016llx\n", regs->reg_rdi);
+    kprintf("  rsi  0x%016llx\n", regs->reg_rsi);
+    kprintf("  rdx  0x%016llx\n", regs->reg_rdx);
+    kprintf("  rcx  0x%016llx\n", regs->reg_rcx);
+    kprintf("  rax  0x%016llx\n", regs->reg_rax);
+    kprintf("  r8   0x%016llx\n", regs->reg_r8);
+    kprintf("  r9   0x%016llx\n", regs->reg_r9);
+    kprintf("  r10  0x%016llx\n", regs->reg_r10);
+    kprintf("  r11  0x%016llx\n", regs->reg_r11);
+    kprintf("  rbx  0x%016llx\n", regs->reg_rbx);
+    kprintf("  rbp  0x%016llx\n", regs->reg_rbp);
+    kprintf("  r12  0x%016llx\n", regs->reg_r12);
+    kprintf("  r13  0x%016llx\n", regs->reg_r13);
+    kprintf("  r14  0x%016llx\n", regs->reg_r14);
+    kprintf("  r15  0x%016llx\n", regs->reg_r15);
 }
 
 static inline void
@@ -137,7 +136,7 @@ print_pgfault(struct trapframe *tf) {
     if ((addr >> 32) & 0x8000) {
         addr |= (0xFFFFLLU << 48);
     }
-    cprintf("page fault at 0x%016llx: %c/%c [%s].\n", addr,
+    kprintf("page fault at 0x%016llx: %c/%c [%s].\n", addr,
             (tf->tf_err & 4) ? 'U' : 'K',
             (tf->tf_err & 2) ? 'W' : 'R',
             (tf->tf_err & 1) ? "protection fault" : "no page found");
@@ -167,6 +166,7 @@ trap_dispatch(struct trapframe *tf) {
     char c;
     int ret;
 
+#if 0
     switch (tf->tf_trapno) {
     case T_PGFLT:
         if ((ret = pgfault_handler(tf)) != 0) {
@@ -178,7 +178,7 @@ trap_dispatch(struct trapframe *tf) {
                 if (trap_in_kernel(tf)) {
                     panic("handle pgfault failed in kernel mode. %e\n", ret);
                 }
-                cprintf("killed by kernel.\n");
+                kprintf("killed by kernel.\n");
                 do_exit(-E_KILLED);
             }
         }
@@ -205,11 +205,12 @@ trap_dispatch(struct trapframe *tf) {
     default:
         print_trapframe(tf);
         if (current != NULL) {
-            cprintf("unhandled trap.\n");
+            kprintf("unhandled trap.\n");
             do_exit(-E_KILLED);
         }
         panic("unexpected trap in kernel.\n");
     }
+#endif
 }
 
 void

@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <error.h>
 #include <assert.h>
+#include <kio.h>
 
 /*
  * Structure for a single named device.
@@ -305,7 +306,7 @@ vfs_mount(const char *devname, int (*mountfunc)(struct device *dev, struct fs **
     struct device *dev = vop_info(vdev->devnode, device);
     if ((ret = mountfunc(dev, &(vdev->fs))) == 0) {
         assert(vdev->fs != NULL);
-        cprintf("vfs: mount %s.\n", vdev->devname);
+        kprintf("vfs: mount %s.\n", vdev->devname);
     }
 
 out:
@@ -337,7 +338,7 @@ vfs_unmount(const char *devname) {
     if ((ret = fsop_unmount(vdev->fs)) == 0) {
         /* now drop the filesystem */
         vdev->fs = NULL;
-        cprintf("vfs: unmount %s.\n", vdev->devname);
+        kprintf("vfs: unmount %s.\n", vdev->devname);
     }
 
 out:
@@ -359,16 +360,16 @@ vfs_unmount_all(void) {
                 if (vdev->mountable && vdev->fs != NULL) {
                     int ret;
                     if ((ret = fsop_sync(vdev->fs)) != 0) {
-                        cprintf("vfs: warning: sync failed for %s: %e.\n", vdev->devname, ret);
+                        kprintf("vfs: warning: sync failed for %s: %e.\n", vdev->devname, ret);
                         continue ;
                     }
                     if ((ret = fsop_unmount(vdev->fs)) != 0) {
-                        cprintf("vfs: warning: unmount failed for %s: %e.\n", vdev->devname, ret);
+                        kprintf("vfs: warning: unmount failed for %s: %e.\n", vdev->devname, ret);
                         continue ;
                     }
                     /* now drop the filesystem */
                     vdev->fs = NULL;
-                    cprintf("vfs: unmount %s.\n", vdev->devname);
+                    kprintf("vfs: unmount %s.\n", vdev->devname);
                 }
             }
         }

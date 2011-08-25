@@ -9,16 +9,7 @@
 #include <console.h>
 #include <kdebug.h>
 #include <ide.h>
-
-#define TICK_NUM 100
-
-static void print_ticks() {
-    cprintf("%d ticks\n",TICK_NUM);
-#ifdef DEBUG_GRADE
-    cprintf("End of Test.\n");
-    panic("EOT: kernel seems ok.");
-#endif
-}
+#include <lcpu.h>
 
 static struct gatedesc idt[256] = {{0}};
 
@@ -125,31 +116,28 @@ print_regs(struct pushregs *regs) {
 
 static void
 trap_dispatch(struct trapframe *tf) {
-    char c;
-    switch (tf->tf_trapno) {
-    case IRQ_OFFSET + IRQ_TIMER:
-        ticks ++;
-        if (ticks % TICK_NUM == 0) {
-            print_ticks();
-        }
-        break;
-    case IRQ_OFFSET + IRQ_COM1:
-    case IRQ_OFFSET + IRQ_KBD:
-        c = cons_getc();
-        cprintf("%s [%03d] %c\n",
-                (tf->tf_trapno != IRQ_OFFSET + IRQ_KBD) ? "serial" : "kbd", c, c);
-        break;
-	case IRQ_OFFSET + IRQ_IDE1:
-    case IRQ_OFFSET + IRQ_IDE2:
-        /* do nothing */
-        break;
-    default:
-        // in kernel, it must be a mistake
-        if ((tf->tf_cs & 3) == 0) {
-            print_trapframe(tf);
-            panic("unexpected trap in kernel.\n");
-        }
-    }
+	int lcpu_id = lapic_id();
+	if (tf->tf_trapno < IRQ_OFFSET)
+	{
+		ex_handler_f h = lcpu_static[lcpu_id].ex_handler[tf->tf_trapno];
+		if (h != NULL)
+			h(tf->tf_trapno, tf);
+	}
+	else if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER)
+	{
+		irq_handler_f h = lcpu_static[lcpu_id].tick_handler;
+		if (h != NULL)
+			h(IRQ_TIMER, tf);
+	}
+	else
+	{
+		int irq_no = tf->tf_trapno - IRQ_OFFSET;
+		irq_handler_f h = irq_control[irq_no].handler;
+		if (h != NULL && lcpu_id == irq_control[irq_no].lcpu_apic_id)
+			h(irq_no, tf);
+	}
+	/* XXX: SYSCALL */
+
 	lapic_send_eoi();
 }
 
@@ -158,4 +146,3 @@ trap(struct trapframe *tf) {
     // dispatch based on what type of trap occurred
     trap_dispatch(tf);
 }
-

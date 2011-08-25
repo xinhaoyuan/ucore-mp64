@@ -7,6 +7,7 @@
 #include <inode.h>
 #include <error.h>
 #include <assert.h>
+#include <kio.h>
 
 /* *
  * __alloc_inode - alloc a inode structure and initialize in_type
@@ -63,7 +64,7 @@ inode_ref_dec(struct inode *node) {
     int ref_count, ret;
     if ((ref_count = atomic_sub_return(&(node->ref_count), 1)) == 0) {
         if ((ret = vop_reclaim(node)) != 0 && ret != -E_BUSY) {
-            cprintf("vfs: warning: vop_reclaim: %e.\n", ret);
+            kprintf("vfs: warning: vop_reclaim: %e.\n", ret);
         }
     }
     return ref_count;
@@ -89,7 +90,7 @@ inode_open_dec(struct inode *node) {
     int open_count, ret;
     if ((open_count = atomic_sub_return(&(node->open_count), 1)) == 0) {
         if ((ret = vop_close(node)) != 0) {
-            cprintf("vfs: warning: vop_close: %e.\n", ret);
+            kprintf("vfs: warning: vop_close: %e.\n", ret);
         }
     }
     return open_count;

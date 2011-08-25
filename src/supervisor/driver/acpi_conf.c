@@ -5,6 +5,7 @@
 #include <sysconf.h>
 #include <lapic.h>
 #include <ioapic.h>
+#include <lcpu.h>
 
 struct acpi_rsdp_s
 {

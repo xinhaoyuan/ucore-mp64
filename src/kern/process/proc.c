@@ -19,6 +19,7 @@
 #include <sysfile.h>
 #include <swap.h>
 #include <mbox.h>
+#include <kio.h>
 
 /* ------------- process/thread mechanism design&implementation -------------
 (an simplified Linux process/thread mechanism )
@@ -1255,7 +1256,7 @@ kernel_execve(const char *name, const char **argv) {
 
 #define __KERNEL_EXECVE(name, path, ...) ({                         \
             const char *argv[] = {path, ##__VA_ARGS__, NULL};       \
-            cprintf("kernel_execve: pid = %d, name = \"%s\".\n",    \
+            kprintf("kernel_execve: pid = %d, name = \"%s\".\n",    \
                     current->pid, name);                            \
             kernel_execve(name, argv);                              \
         })
@@ -1328,13 +1329,13 @@ init_main(void *arg) {
     mbox_cleanup();
     fs_cleanup();
 
-    cprintf("all user-mode processes have quit.\n");
+    kprintf("all user-mode processes have quit.\n");
     assert(initproc->cptr == kswapd && initproc->yptr == NULL && initproc->optr == NULL);
     assert(kswapd->cptr == NULL && kswapd->yptr == NULL && kswapd->optr == NULL);
     assert(nr_process == 3);
     assert(nr_free_pages_store == nr_free_pages());
     assert(slab_allocated_store == slab_allocated());
-    cprintf("init check memory pass.\n");
+    kprintf("init check memory pass.\n");
     return 0;
 }
 

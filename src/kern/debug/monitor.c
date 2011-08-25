@@ -3,6 +3,7 @@
 #include <trap.h>
 #include <monitor.h>
 #include <kdebug.h>
+#include <kio.h>
 
 /* *
  * Simple command-line kernel monitor useful for controlling the
@@ -44,7 +45,7 @@ parse(char *buf, char **argv) {
 
         // save and scan past next arg
         if (argc == MAXARGS - 1) {
-            cprintf("Too many arguments (max %d).\n", MAXARGS);
+            kprintf("Too many arguments (max %d).\n", MAXARGS);
         }
         argv[argc ++] = buf;
         while (*buf != '\0' && strchr(WHITESPACE, *buf) == NULL) {
@@ -71,7 +72,7 @@ runcmd(char *buf, struct trapframe *tf) {
             return commands[i].func(argc - 1, argv + 1, tf);
         }
     }
-    cprintf("Unknown command '%s'\n", argv[0]);
+    kprintf("Unknown command '%s'\n", argv[0]);
     return 0;
 }
 
@@ -79,8 +80,8 @@ runcmd(char *buf, struct trapframe *tf) {
 
 void
 monitor(struct trapframe *tf) {
-    cprintf("Welcome to the kernel debug monitor!!\n");
-    cprintf("Type 'help' for a list of commands.\n");
+    kprintf("Welcome to the kernel debug monitor!!\n");
+    kprintf("Type 'help' for a list of commands.\n");
 
     if (tf != NULL) {
         print_trapframe(tf);
@@ -88,7 +89,7 @@ monitor(struct trapframe *tf) {
 
     char *buf;
     while (1) {
-        if ((buf = readline("K> ")) != NULL) {
+        if ((buf = kreadline("K> ")) != NULL) {
             if (runcmd(buf, tf) < 0) {
                 break;
             }
@@ -101,7 +102,7 @@ int
 mon_help(int argc, char **argv, struct trapframe *tf) {
     int i;
     for (i = 0; i < NCOMMANDS; i ++) {
-        cprintf("%s - %s\n", commands[i].name, commands[i].desc);
+        kprintf("%s - %s\n", commands[i].name, commands[i].desc);
     }
     return 0;
 }

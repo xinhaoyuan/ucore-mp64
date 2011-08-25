@@ -11,6 +11,7 @@
 #include <shmem.h>
 #include <proc.h>
 #include <sem.h>
+#include <kio.h>
 
 /* 
   vmm design include two parts: mm_struct (mm) & vma_struct (vma)
@@ -594,7 +595,7 @@ check_vmm(void) {
     assert(nr_free_pages_store == nr_free_pages());
     assert(slab_allocated_store == slab_allocated());
 
-    cprintf("check_vmm() succeeded.\n");
+    kprintf("check_vmm() succeeded.\n");
 }
 
 static void
@@ -644,7 +645,7 @@ check_vma_struct(void) {
     assert(nr_free_pages_store == nr_free_pages());
     assert(slab_allocated_store == slab_allocated());
 
-    cprintf("check_vma_struct() succeeded!\n");
+    kprintf("check_vma_struct() succeeded!\n");
 }
 
 struct mm_struct *check_mm_struct;
@@ -693,7 +694,7 @@ check_pgfault(void) {
     assert(nr_free_pages_store == nr_free_pages());
     assert(slab_allocated_store == slab_allocated());
 
-    cprintf("check_pgfault() succeeded!\n");
+    kprintf("check_pgfault() succeeded!\n");
 }
 
 int

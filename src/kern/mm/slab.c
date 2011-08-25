@@ -7,6 +7,7 @@
 #include <pmm.h>
 #include <stdio.h>
 #include <rb_tree.h>
+#include <kio.h>
 
 /* The slab allocator used in ucore is based on an algorithm first introduced by 
    Jeff Bonwick for the SunOS operating system. The paper can be download from 
@@ -623,6 +624,6 @@ check_pass:
     assert(nr_free_pages_store == nr_free_pages());
     assert(slab_allocated_store == slab_allocated());
 
-    cprintf("check_slab() succeeded!\n");
+    kprintf("check_slab() succeeded!\n");
 }
 

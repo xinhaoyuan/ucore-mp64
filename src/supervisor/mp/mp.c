@@ -2,7 +2,7 @@
 #include <string.h>
 #include <pmm.h>
 #include <sysconf.h>
-#include <lapic.h>
+#include <lcpu.h>
 #include <x86.h>
 #include <trap.h>
 

@@ -19,8 +19,11 @@ typedef struct context_s
 
 typedef context_s *context_t;
 
-extern void (*context_switch)(context_t from, context_t to);
-extern void (*context_fill)(context_t ctx,
+#define context_switch (*context_switch_ptr)
+#define context_fill   (*context_fill_ptr)
+
+extern void context_switch(context_t from, context_t to);
+extern void context_fill(context_t ctx,
 							void (*entry)(void *arg), void *arg,
 							uintptr_t vpt, uintptr_t stk_top);
 

@@ -3,8 +3,11 @@
 #include <pmm.h>
 #include <mmu.h>
 #include <lapic.h>
+#include <ioapic.h>
+#include <lcpu.h>
 #include <x86.h>
 #include <spinlock.h>
+#include <stdio.h>
 
 kern_bootinfo_s kern_bootinfo;
 char *kern_data;
@@ -93,7 +96,65 @@ vkprintf(const char *fmt, va_list ap)
 	return cnt;
 }
 
+void
+kputchar(int c)
+{
+	bool intr_save;
+	
+	local_intr_save(intr_save);
+	spinlock_acquire(&kprintf_lock);
+	cputchar(c);
+	spinlock_release(&kprintf_lock);
+	local_intr_restore(intr_save);
+}
+
+char *
+kreadline(const char *prompt)
+{
+	return readline(prompt);
+}
+
+void
+ex_handler_set(int ex_no, ex_handler_f h)
+{
+	lcpu_static[lapic_id()].ex_handler[ex_no] = h;
+}
+
+void
+irq_handler_set(int irq_no, irq_handler_f h)
+{
+	ioapic_disable(ioapic_id_set[0], irq_no);
+	irq_control[irq_no].lcpu_apic_id = lapic_id();
+	irq_control[irq_no].handler = h;
+}
+
+void
+irq_enable(int irq_no)
+{
+	ioapic_enable(ioapic_id_set[0], irq_no, irq_control[irq_no].lcpu_apic_id);
+}
+
+void
+irq_disable(int irq_no)
+{
+	ioapic_disable(ioapic_id_set[0], irq_no);
+}
+
+void
+irq_ack(int irq_no)
+{
+	// lapic_send_eoi();
+	// ioapic_send_eoi(irq_no);
+}
+
 EXPORT_SYMBOL(context_fill);
 EXPORT_SYMBOL(context_switch);
 EXPORT_SYMBOL(vkprintf);
+EXPORT_SYMBOL(kputchar);
 EXPORT_SYMBOL(lapic_id);
+EXPORT_SYMBOL(kreadline);
+EXPORT_SYMBOL(ex_handler_set);
+EXPORT_SYMBOL(irq_handler_set);
+EXPORT_SYMBOL(irq_enable);
+EXPORT_SYMBOL(irq_disable);
+EXPORT_SYMBOL(irq_ack);

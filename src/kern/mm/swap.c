@@ -15,6 +15,7 @@
 #include <proc.h>
 #include <wait.h>
 #include <sync.h>
+#include <kio.h>
 
 /* ------------- swap in/out & page replacement mechanism design&implementation -------------
 Hardware Requrirement:
@@ -950,7 +951,7 @@ check_swap(void) {
     assert(nr_free_pages_store == nr_free_pages());
     assert(slab_allocated_store == slab_allocated());
 
-    cprintf("check_swap() succeeded.\n");
+    kprintf("check_swap() succeeded.\n");
 }
 
 static void
@@ -1020,7 +1021,7 @@ check_mm_swap(void) {
     assert(nr_free_pages_store == nr_free_pages());
     assert(slab_allocated_store == slab_allocated());
 
-    cprintf("check_mm_swap: step1, mm_map ok.\n");
+    kprintf("check_mm_swap: step1, mm_map ok.\n");
 
     // step2: check page fault
 
@@ -1123,7 +1124,7 @@ check_mm_swap(void) {
     ret = mm_unmap(mm0, addr0, PGSIZE * 2);
     assert(ret == 0 && mm0->map_count == 0);
 
-    cprintf("check_mm_swap: step2, mm_unmap ok.\n");
+    kprintf("check_mm_swap: step2, mm_unmap ok.\n");
 
     // step3: check exit_mmap
 
@@ -1139,7 +1140,7 @@ check_mm_swap(void) {
         assert(pgdir[i] == 0);
     }
 
-    cprintf("check_mm_swap: step3, exit_mmap ok.\n");
+    kprintf("check_mm_swap: step3, exit_mmap ok.\n");
 
     // step4: check dup_mmap
 
@@ -1215,7 +1216,7 @@ check_mm_swap(void) {
     free_page(kva2page(mm1->pgdir));
     mm_destroy(mm1);
 
-    cprintf("check_mm_swap: step4, dup_mmap ok.\n");
+    kprintf("check_mm_swap: step4, dup_mmap ok.\n");
 
     refill_inactive_scan();
     page_launder();
@@ -1226,7 +1227,7 @@ check_mm_swap(void) {
     assert(nr_free_pages_store == nr_free_pages());
     assert(slab_allocated_store == slab_allocated());
 
-    cprintf("check_mm_swap() succeeded.\n");
+    kprintf("check_mm_swap() succeeded.\n");
 }
 
 static void
@@ -1329,7 +1330,7 @@ check_mm_shm_swap(void) {
     *(char *)(addr1 + PTSIZE) = (char)(0xDC);
     assert(*(char *)(addr0 + PTSIZE) == (char)(0xDC));
 
-    cprintf("check_mm_shm_swap: step1, share memory ok.\n");
+    kprintf("check_mm_shm_swap: step1, share memory ok.\n");
 
     // setup mm1
 
@@ -1376,7 +1377,7 @@ check_mm_shm_swap(void) {
 
     assert(shmem_ref(shmem) == 2);
 
-    cprintf("check_mm_shm_swap: step2, dup_mmap ok.\n");
+    kprintf("check_mm_shm_swap: step2, dup_mmap ok.\n");
 
     // free memory
 
@@ -1396,6 +1397,6 @@ check_mm_shm_swap(void) {
     assert(nr_free_pages_store == nr_free_pages());
     assert(slab_allocated_store == slab_allocated());
 
-    cprintf("check_mm_shm_swap() succeeded.\n");
+    kprintf("check_mm_shm_swap() succeeded.\n");
 }
 

@@ -10,6 +10,7 @@
 #include <slab.h>
 #include <swap.h>
 #include <error.h>
+#include <kio.h>
 
 /* *
  * Task State Segment:
@@ -134,7 +135,7 @@ gdt_init(void) {
 static void
 init_pmm_manager(void) {
     pmm_manager = &buddy_pmm_manager;
-    cprintf("memory management: %s\n", pmm_manager->name);
+    kprintf("memory management: %s\n", pmm_manager->name);
     pmm_manager->init();
 }
 
@@ -193,11 +194,11 @@ page_init(void) {
     struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);
     uint64_t maxpa = 0;
 
-    cprintf("e820map:\n");
+    kprintf("e820map:\n");
     int i;
     for (i = 0; i < memmap->nr_map; i ++) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
-        cprintf("  memory: %016llx, [%016llx, %016llx], type = %d.\n",
+        kprintf("  memory: %016llx, [%016llx, %016llx], type = %d.\n",
                 memmap->map[i].size, begin, end - 1, memmap->map[i].type);
         if (memmap->map[i].type == E820_ARM) {
             if (maxpa < end && begin < KMEMSIZE) {
@@ -630,7 +631,7 @@ copy_range(pgd_t *to, pgd_t *from, uintptr_t start, uintptr_t end, bool share) {
 static void
 check_alloc_page(void) {
     pmm_manager->check();
-    cprintf("check_alloc_page() succeeded!\n");
+    kprintf("check_alloc_page() succeeded!\n");
 }
 
 static void
@@ -667,7 +668,7 @@ check_boot_pgdir(void) {
 
     assert(nr_free_pages() == nr_free_pages_saved);
 
-    cprintf("check_boot_pgdir() succeeded!\n");
+    kprintf("check_boot_pgdir() succeeded!\n");
 }
 
 //perm2str - use string 'u,r,w,-' to present the permission
@@ -722,13 +723,13 @@ print_pgdir_sub(int deep, size_t left, size_t right, char *s1[], size_t s2[], ui
         uint32_t perm;
         size_t l, r = left;
         while ((perm = get_pgtable_items(left, right, r, s3[0], &l, &r)) != 0) {
-            cprintf(s1[0], r - l);
+            kprintf(s1[0], r - l);
             size_t lb = l * s2[0], rb = r * s2[0];
             if ((lb >> 32) & 0x8000) {
                 lb |= (0xFFFFLLU << 48);
                 rb |= (0xFFFFLLU << 48);
             }
-            cprintf(" %016llx-%016llx %016llx %s\n", lb, rb, rb - lb, perm2str(perm));
+            kprintf(" %016llx-%016llx %016llx %s\n", lb, rb, rb - lb, perm2str(perm));
             print_pgdir_sub(deep - 1, l * NPGENTRY, r * NPGENTRY, s1 + 1, s2 + 1, s3 + 1);
         }
     }
@@ -745,8 +746,8 @@ print_pgdir(void) {
     };
     size_t s2[] = {PUSIZE, PMSIZE, PTSIZE, PGSIZE};
     uintptr_t *s3[] = {vgd, vud, vmd, vpt};
-    cprintf("-------------------- BEGIN --------------------\n");
+    kprintf("-------------------- BEGIN --------------------\n");
     print_pgdir_sub(sizeof(s1) / sizeof(s1[0]), 0, NPGENTRY, s1, s2, s3);
-    cprintf("--------------------- END ---------------------\n");
+    kprintf("--------------------- END ---------------------\n");
 }
 

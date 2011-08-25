@@ -4,10 +4,6 @@
 #include <trap.h>
 #include <x86.h>
 
-unsigned int   lcpu_id_set[LAPIC_COUNT];
-lcpu_static_s  lcpu_static[LAPIC_COUNT];
-lcpu_dynamic_s lcpu_dynamic[LAPIC_COUNT];
-
 /* The LAPIC access */
 // Local APIC registers, divided by 4 for use as uint32[] indices.
 #define ID      (0x0020/4)   // ID
