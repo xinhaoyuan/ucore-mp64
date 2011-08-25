@@ -14,13 +14,6 @@ lcpu_dynamic_s lcpu_dynamic[LAPIC_COUNT];
 void
 lcpu_init(void)
 {
-	if (lapic_id() == sysconf.lcpu_boot)
-	{
-		clock_init();               // init clock interrupt
-		intr_enable();              // enable irq interrupt
-		
-		ioapic_enable(ioapic_id_set[0], IRQ_KBD, 0);
-	}
-	
+	intr_enable();
 	jump_kern();
 }
