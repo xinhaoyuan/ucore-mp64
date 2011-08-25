@@ -110,16 +110,13 @@ lgdt(struct pseudodesc *pd) {
  * user to kernel.
  * */
 void
-load_rsp0(int apic_id, uintptr_t rsp0) {
-    ts[apic_id].ts_rsp0 = rsp0;
+load_rsp0(uintptr_t rsp0) {
+    ts[lapic_id()].ts_rsp0 = rsp0;
 }
 
 /* gdt_init - initialize the default GDT and TSS */
 static void
 gdt_init(void) {
-    // set boot kernel stack and default SS0
-    load_rsp0(sysconf.lcpu_boot, (uintptr_t)bootstacktop);
-
     // initialize the TSS filed of the gdt
 	int i;
 	for (i = 0; i != LAPIC_COUNT; ++ i)

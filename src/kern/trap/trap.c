@@ -15,6 +15,7 @@
 #include <syscall.h>
 #include <error.h>
 #include <kio.h>
+#include <clock.h>
 
 #define TICK_NUM 30
 
@@ -166,7 +167,6 @@ trap_dispatch(struct trapframe *tf) {
     char c;
     int ret;
 
-#if 0
     switch (tf->tf_trapno) {
     case T_PGFLT:
         if ((ret = pgfault_handler(tf)) != 0) {
@@ -193,10 +193,12 @@ trap_dispatch(struct trapframe *tf) {
         break;
     case IRQ_OFFSET + IRQ_COM1:
     case IRQ_OFFSET + IRQ_KBD:
+#if 0
         c = cons_getc();
 
         extern void dev_stdin_write(char c);
         dev_stdin_write(c);
+#endif
         break;
     case IRQ_OFFSET + IRQ_IDE1:
     case IRQ_OFFSET + IRQ_IDE2:
@@ -210,7 +212,6 @@ trap_dispatch(struct trapframe *tf) {
         }
         panic("unexpected trap in kernel.\n");
     }
-#endif
 }
 
 void

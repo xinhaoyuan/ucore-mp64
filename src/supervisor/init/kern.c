@@ -147,6 +147,36 @@ irq_ack(int irq_no)
 	// ioapic_send_eoi(irq_no);
 }
 
+pgd_t *
+init_pgdir_get(void)
+{
+	return lcpu_static[lapic_id()].init_pgdir;
+}
+
+void
+kpage_private_set(uintptr_t pa, void *data)
+{
+	pa2page(pa)->private = data;
+}
+
+void *
+kpage_private_get(uintptr_t pa)
+{
+	return pa2page(pa)->private;
+}
+
+uintptr_t
+kalloc_pages(size_t npages)
+{
+	return page2pa(alloc_pages(npages));
+}
+
+void
+kfree_pages(uintptr_t pa, size_t npages)
+{
+	free_pages(pa2page(pa), npages);
+}
+
 EXPORT_SYMBOL(context_fill);
 EXPORT_SYMBOL(context_switch);
 EXPORT_SYMBOL(vkprintf);
@@ -158,3 +188,9 @@ EXPORT_SYMBOL(irq_handler_set);
 EXPORT_SYMBOL(irq_enable);
 EXPORT_SYMBOL(irq_disable);
 EXPORT_SYMBOL(irq_ack);
+EXPORT_SYMBOL(init_pgdir_get);
+EXPORT_SYMBOL(kpage_private_set);
+EXPORT_SYMBOL(kpage_private_get);
+EXPORT_SYMBOL(kalloc_pages);
+EXPORT_SYMBOL(kfree_pages);
+EXPORT_SYMBOL(load_rsp0);

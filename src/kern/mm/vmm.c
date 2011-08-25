@@ -586,13 +586,13 @@ copy_string(struct mm_struct *mm, char *dst, const char *src, size_t maxn) {
 // check_vmm - check correctness of vmm
 static void
 check_vmm(void) {
-    size_t nr_free_pages_store = nr_free_pages();
+    size_t nr_used_pages_store = nr_used_pages();
     size_t slab_allocated_store = slab_allocated();
 
     check_vma_struct();
     check_pgfault();
 
-    assert(nr_free_pages_store == nr_free_pages());
+    assert(nr_used_pages_store == nr_used_pages());
     assert(slab_allocated_store == slab_allocated());
 
     kprintf("check_vmm() succeeded.\n");
@@ -600,7 +600,7 @@ check_vmm(void) {
 
 static void
 check_vma_struct(void) {
-    size_t nr_free_pages_store = nr_free_pages();
+    size_t nr_used_pages_store = nr_used_pages();
     size_t slab_allocated_store = slab_allocated();
 
     struct mm_struct *mm = mm_create();
@@ -642,7 +642,7 @@ check_vma_struct(void) {
 
     mm_destroy(mm);
 
-    assert(nr_free_pages_store == nr_free_pages());
+    assert(nr_used_pages_store == nr_used_pages());
     assert(slab_allocated_store == slab_allocated());
 
     kprintf("check_vma_struct() succeeded!\n");
@@ -653,14 +653,14 @@ struct mm_struct *check_mm_struct;
 // check_pgfault - check correctness of pgfault handler
 static void
 check_pgfault(void) {
-    size_t nr_free_pages_store = nr_free_pages();
+    size_t nr_used_pages_store = nr_used_pages();
     size_t slab_allocated_store = slab_allocated();
 
     check_mm_struct = mm_create();
     assert(check_mm_struct != NULL);
 
     struct mm_struct *mm = check_mm_struct;
-    pgd_t *pgdir = mm->pgdir = boot_pgdir;
+    pgd_t *pgdir = mm->pgdir = init_pgdir_get();
     assert(pgdir[0] == 0);
 
     struct vma_struct *vma = vma_create(0, PTSIZE, VM_WRITE);
@@ -691,7 +691,7 @@ check_pgfault(void) {
     mm_destroy(mm);
     check_mm_struct = NULL;
 
-    assert(nr_free_pages_store == nr_free_pages());
+    assert(nr_used_pages_store == nr_used_pages());
     assert(slab_allocated_store == slab_allocated());
 
     kprintf("check_pgfault() succeeded!\n");

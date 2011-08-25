@@ -661,7 +661,7 @@ kswapd_main(void *arg) {
 // check_swap - check the correctness of swap & page replacement algorithm
 static void
 check_swap(void) {
-    size_t nr_free_pages_store = nr_free_pages();
+    size_t nr_used_pages_store = nr_used_pages();
     size_t slab_allocated_store = slab_allocated();
 
     size_t offset;
@@ -677,7 +677,7 @@ check_swap(void) {
 
     check_mm_struct = mm;
 
-    pgd_t *pgdir = mm->pgdir = boot_pgdir;
+    pgd_t *pgdir = mm->pgdir = init_pgdir_get();
     assert(pgdir[0] == 0);
 
     struct vma_struct *vma = vma_create(0, PTSIZE, VM_WRITE | VM_READ);
@@ -752,9 +752,9 @@ check_swap(void) {
     assert(nr_inactive_pages == 1);
     page_ref_dec(rp1);
 
-    size_t count = nr_free_pages();
+    size_t count = nr_used_pages();
     swap_remove_entry(entry);
-    assert(nr_inactive_pages == 0 && nr_free_pages() == count + 1);
+    assert(nr_inactive_pages == 0 && nr_used_pages() == count + 1);
 
     // check swap_out_mm
 
@@ -834,10 +834,10 @@ check_swap(void) {
     assert(ret == 1);
     assert(*ptep0 == entry && page_ref(rp0) == 0 && mem_map[1] == 1);
 
-    count = nr_free_pages();
+    count = nr_used_pages();
     refill_inactive_scan();
     page_launder();
-    assert(count + 1 == nr_free_pages());
+    assert(count + 1 == nr_used_pages());
 
     ret = swapfs_read(entry, rp1);
     assert(ret == 0 && *(char *)(page2kva(rp1)) == (char)0xEF);
@@ -948,7 +948,7 @@ check_swap(void) {
         mem_map[offset] = SWAP_UNUSED;
     }
 
-    assert(nr_free_pages_store == nr_free_pages());
+    assert(nr_used_pages_store == nr_used_pages());
     assert(slab_allocated_store == slab_allocated());
 
     kprintf("check_swap() succeeded.\n");
@@ -956,7 +956,7 @@ check_swap(void) {
 
 static void
 check_mm_swap(void) {
-    size_t nr_free_pages_store = nr_free_pages();
+    size_t nr_used_pages_store = nr_used_pages();
     size_t slab_allocated_store = slab_allocated();
 
     int ret, i, j;
@@ -1018,7 +1018,7 @@ check_mm_swap(void) {
 
     mm_destroy(mm0);
 
-    assert(nr_free_pages_store == nr_free_pages());
+    assert(nr_used_pages_store == nr_used_pages());
     assert(slab_allocated_store == slab_allocated());
 
     kprintf("check_mm_swap: step1, mm_map ok.\n");
@@ -1033,7 +1033,7 @@ check_mm_swap(void) {
     struct Page *page = alloc_page();
     assert(page != NULL);
     pgd_t *pgdir = page2kva(page);
-    memcpy(pgdir, boot_pgdir, PGSIZE);
+    memcpy(pgdir, init_pgdir_get(), PGSIZE);
     pgdir[PGX(VPT)] = PADDR(pgdir) | PTE_P | PTE_W;
 
     // prepare for page fault
@@ -1173,7 +1173,7 @@ check_mm_swap(void) {
     page = alloc_page();
     assert(page != NULL);
     pgdir = page2kva(page);
-    memcpy(pgdir, boot_pgdir, PGSIZE);
+    memcpy(pgdir, init_pgdir_get(), PGSIZE);
     pgdir[PGX(VPT)] = PADDR(pgdir) | PTE_P | PTE_W;
     mm1->pgdir = pgdir;
 
@@ -1201,10 +1201,10 @@ check_mm_swap(void) {
         assert(*(char *)addr1 == (char)(i * i));
     }
 
-    // switch to boot_cr3
+    // switch to PADDR(init_pgdir_get())
 
     check_mm_struct = NULL;
-    lcr3(boot_cr3);
+    lcr3(PADDR(init_pgdir_get()));
 
     // free memory
 
@@ -1224,7 +1224,7 @@ check_mm_swap(void) {
         assert(mem_map[i] == SWAP_UNUSED);
     }
 
-    assert(nr_free_pages_store == nr_free_pages());
+    assert(nr_used_pages_store == nr_used_pages());
     assert(slab_allocated_store == slab_allocated());
 
     kprintf("check_mm_swap() succeeded.\n");
@@ -1232,7 +1232,7 @@ check_mm_swap(void) {
 
 static void
 check_mm_shm_swap(void) {
-    size_t nr_free_pages_store = nr_free_pages();
+    size_t nr_used_pages_store = nr_used_pages();
     size_t slab_allocated_store = slab_allocated();
 
     int ret, i;
@@ -1249,7 +1249,7 @@ check_mm_shm_swap(void) {
     struct Page *page = alloc_page();
     assert(page != NULL);
     pgd_t *pgdir = page2kva(page);
-    memcpy(pgdir, boot_pgdir, PGSIZE);
+    memcpy(pgdir, init_pgdir_get(), PGSIZE);
     pgdir[PGX(VPT)] = PADDR(pgdir) | PTE_P | PTE_W;
 
     mm0->pgdir = pgdir;
@@ -1341,7 +1341,7 @@ check_mm_shm_swap(void) {
     page = alloc_page();
     assert(page != NULL);
     pgdir = page2kva(page);
-    memcpy(pgdir, boot_pgdir, PGSIZE);
+    memcpy(pgdir, init_pgdir_get(), PGSIZE);
     pgdir[PGX(VPT)] = PADDR(pgdir) | PTE_P | PTE_W;
     mm1->pgdir = pgdir;
 
@@ -1382,7 +1382,7 @@ check_mm_shm_swap(void) {
     // free memory
 
     check_mm_struct = NULL;
-    lcr3(boot_cr3);
+    lcr3(PADDR(init_pgdir_get()));
 
     exit_mmap(mm0);
     free_page(kva2page(mm0->pgdir));
@@ -1394,9 +1394,8 @@ check_mm_shm_swap(void) {
         assert(mem_map[i] == SWAP_UNUSED);
     }
 
-    assert(nr_free_pages_store == nr_free_pages());
+    assert(nr_used_pages_store == nr_used_pages());
     assert(slab_allocated_store == slab_allocated());
 
     kprintf("check_mm_shm_swap() succeeded.\n");
 }
-

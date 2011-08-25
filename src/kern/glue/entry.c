@@ -13,9 +13,8 @@ __kern_entry(void)
 {
 	if (lapic_id() == 3)
 	{
-		irq_handler_set(IRQ_KBD, &kbd_intr);
-		irq_enable(IRQ_KBD);
-		kprintf("SET UP KBD INTR\n");
+		pmm_init();
+		slab_init();
 	}
 	
 	while (1) ;

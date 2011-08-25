@@ -122,6 +122,14 @@ trap_dispatch(struct trapframe *tf) {
 		ex_handler_f h = lcpu_static[lcpu_id].ex_handler[tf->tf_trapno];
 		if (h != NULL)
 			h(tf->tf_trapno, tf);
+		else
+		{
+			// in kernel, it must be a mistake
+			if ((tf->tf_cs & 3) == 0) {
+				print_trapframe(tf);
+				panic("unexpected trap in kernel.\n");
+			}
+		}
 	}
 	else if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER)
 	{

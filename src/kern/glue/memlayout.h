@@ -1,7 +1,5 @@
-#ifndef __KERN_MM_MEMLAYOUT_H__
-#define __KERN_MM_MEMLAYOUT_H__
-
-/* This file contains the definitions for memory management in our OS. */
+#ifndef __GLUE_MEMLAYOUT_H__
+#define __GLUE_MEMLAYOUT_H__
 
 /* global segment number */
 #define SEG_KTEXT   1
@@ -24,45 +22,6 @@
 #define KERNEL_DS   ((GD_KDATA) | DPL_KERNEL)
 #define USER_CS     ((GD_UTEXT) | DPL_USER)
 #define USER_DS     ((GD_UDATA) | DPL_USER)
-
-/* *
- * Virtual memory map:                                          Permissions
- *                                                              kernel/user
- *
- *     4G x 4G -------------> +---------------------------------+
- *                            |                                 |
- *                            |         Empty Memory (*)        |
- *                            |                                 |
- *                            +---------------------------------+ 0xFFFFA00000000000
- *                            |   Cur. Page Table (Kern, RW)    | RW/-- PUSIZE
- *     VPT -----------------> +---------------------------------+ 0xFFFF9F8000000000
- *                            |        Invalid Memory (*)       | --/--
- *     KERNTOP -------------> +---------------------------------+ 0xFFFF900000000000
- *                            |                                 |
- *                            |    Remapped Physical Memory     | RW/-- KMEMSIZE
- *                            |                                 |
- *     KERNBASE ------------> +---------------------------------+ 0xFFFF800000000000
- *                            |        Invalid Memory (*)       | --/--
- *     USERTOP -------------> +---------------------------------+ 0x0000100000000000
- *                            |           User stack            |
- *                            +---------------------------------+
- *                            |                                 |
- *                            :                                 :
- *                            |         ~~~~~~~~~~~~~~~~        |
- *                            :                                 :
- *                            |                                 |
- *                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *                            |       User Program & Heap       |
- *     UTEXT ---------------> +---------------------------------+ 0x0000000010000000
- *                            |         Empty Memory (*)        |
- *     USERBASE ------------> +---------------------------------+ 0x0000000001000000
- *                            |        Invalid Memory (*)       | --/--
- *     0 -------------------> +---------------------------------+ 0x0000000000000000
- * (*) Note: The kernel ensures that "Invalid Memory" is *never* mapped.
- *     "Empty Memory" is normally unmapped, but user programs may map pages
- *     there if desired.
- *
- * */
 
 /* All physical memory mapped at this address */
 #define KERNBASE            0xFFFF800000000000
@@ -107,33 +66,18 @@ typedef uintptr_t pmd_t;
 typedef uintptr_t pte_t;
 typedef pte_t swap_entry_t;
 
-// some constants for bios interrupt 15h AX = 0xE820
-#define E820MAX             20      // number of entries in E820MAP
-#define E820_ARM            1       // address range memory
-#define E820_ARR            2       // address range reserved
-
-struct e820map {
-    int nr_map;
-    struct {
-        uint64_t addr;
-        uint64_t size;
-        uint32_t type;
-    } __attribute__((packed)) map[E820MAX];
-};
-
 /* *
  * struct Page - Page descriptor structures. Each Page describes one
  * physical page. In kern/mm/pmm.h, you can find lots of useful functions
  * that convert Page to other data types, such as phyical address.
  * */
 struct Page {
-    atomic_t ref;                   // page frame's reference counter
-    uint32_t flags;                 // array of flags that describe the status of the page frame
-    unsigned int property;          // used in buddy system, stores the order (the X in 2^X) of the continuous memory block
-    int zone_num;                   // used in buddy system, the No. of zone which the page belongs to
-    list_entry_t page_link;         // free list link
-    swap_entry_t index;             // stores a swapped-out page identifier
-    list_entry_t swap_link;         // swap hash link
+	uintptr_t pa;          		/* The physical address of the page */
+    atomic_t ref;				/* page frame's reference counter */
+    uint32_t flags;             /* array of flags that describe the status of the page frame */
+    list_entry_t page_link;	    /* free list link */
+    swap_entry_t index;         /* stores a swapped-out page identifier */
+    list_entry_t swap_link;     /* swap hash link */
 };
 
 /* Flags describing the status of a page frame */

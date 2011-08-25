@@ -79,7 +79,7 @@ runcmd(char *buf, struct trapframe *tf) {
 
 void
 monitor(struct trapframe *tf) {
-    cprintf("Welcome to the kernel debug monitor!!\n");
+    cprintf("Welcome to the supervisor debug monitor!!\n");
     cprintf("Type 'help' for a list of commands.\n");
 
     if (tf != NULL) {

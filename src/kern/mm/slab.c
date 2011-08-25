@@ -313,7 +313,7 @@ kmem_cache_grow(kmem_cache_t *cachep) {
         SET_PAGE_SLAB(page, slabp);
 	//this page is used for slab
         SetPageSlab(page);
-        page ++;
+        page = NEXT_PAGE(page);
     } while (-- order_size);
 
     int i;
@@ -475,7 +475,7 @@ check_slab(void) {
     int i;
     void *v0, *v1;
 
-    size_t nr_free_pages_store = nr_free_pages();
+    size_t nr_used_pages_store = nr_used_pages();
     size_t slab_allocated_store = slab_allocated();
 
     /* slab must be empty now */
@@ -500,23 +500,22 @@ check_slab(void) {
 
     p0 = kva2page(slabp0->s_mem - slabp0->offset), p1 = p0;
     order_size = (1 << cachep0->page_order);
-    for (i = 0; i < cachep0->page_order; i ++, p1 ++) {
+    for (i = 0; i < cachep0->page_order; i ++, p1 = NEXT_PAGE(p1)) {
         assert(PageSlab(p1));
         assert(GET_PAGE_CACHE(p1) == cachep0 && GET_PAGE_SLAB(p1) == slabp0);
     }
-
+	
     assert(v0 == slabp0->s_mem);
     assert((v1 = kmalloc(16)) != NULL && v1 == v0 + 32);
-
+	
     kfree(v0);
     assert(slabp0->free == 0);
     kfree(v1);
     assert(list_empty(&(cachep0->slabs_notfull)));
-
-    for (i = 0; i < cachep0->page_order; i ++, p0 ++) {
-        assert(!PageSlab(p0));
+	
+	for (i = 0; i < cachep0->page_order; i ++, p0 = NEXT_PAGE(p0)) {
+		assert(!PageSlab(p0));
     }
-
 
     v0 = kmalloc(16);
     assert(!list_empty(&(cachep0->slabs_notfull)));
@@ -609,7 +608,7 @@ check_slab(void) {
     assert(slabp1 != NULL);
 
     order_size = (1 << cachep0->page_order);
-    for (i = 0; i < order_size; i ++, p0 ++) {
+    for (i = 0; i < order_size; i ++, p0 = NEXT_PAGE(p0)) {
         assert(PageSlab(p0));
         assert(GET_PAGE_CACHE(p0) == cachep0 && GET_PAGE_SLAB(p0) == slabp0);
     }
@@ -621,7 +620,7 @@ check_pass:
     check_rb_tree();
     check_slab_empty();
     assert(slab_allocated() == 0);
-    assert(nr_free_pages_store == nr_free_pages());
+    assert(nr_used_pages_store == nr_used_pages());
     assert(slab_allocated_store == slab_allocated());
 
     kprintf("check_slab() succeeded!\n");

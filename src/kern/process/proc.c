@@ -111,7 +111,7 @@ alloc_proc(void) {
         proc->mm = NULL;
         memset(&(proc->context), 0, sizeof(struct context));
         proc->tf = NULL;
-        proc->cr3 = boot_cr3;
+        proc->cr3 = PADDR(init_pgdir_get());
         proc->flags = 0;
         memset(proc->name, 0, PROC_NAME_LEN);
         proc->wait_state = 0;
@@ -298,7 +298,7 @@ setup_pgdir(struct mm_struct *mm) {
         return -E_NO_MEM;
     }
     pgd_t *pgdir = page2kva(page);
-    memcpy(pgdir, boot_pgdir, PGSIZE);
+    memcpy(pgdir, init_pgdir_get(), PGSIZE);
     pgdir[PGX(VPT)] = PADDR(pgdir) | PTE_P | PTE_W;
     mm->pgdir = pgdir;
     return 0;
@@ -583,7 +583,7 @@ __do_exit(void) {
 
     struct mm_struct *mm = current->mm;
     if (mm != NULL) {
-        lcr3(boot_cr3);
+        lcr3(PADDR(init_pgdir_get()));
         if (mm_count_dec(mm) == 0) {
             exit_mmap(mm);
             put_pgdir(mm);
@@ -916,7 +916,7 @@ do_execve(const char *name, int argc, const char **argv) {
     }
 
     if (mm != NULL) {
-        lcr3(boot_cr3);
+        lcr3(PADDR(init_pgdir_get()));
         if (mm_count_dec(mm) == 0) {
             exit_mmap(mm);
             put_pgdir(mm);
@@ -1299,7 +1299,7 @@ init_main(void *arg) {
         panic("set boot fs failed: %e.\n", ret);
     }
 
-    size_t nr_free_pages_store = nr_free_pages();
+    size_t nr_used_pages_store = nr_used_pages();
     size_t slab_allocated_store = slab_allocated();
 
     unsigned int nr_process_store = nr_process;
@@ -1333,7 +1333,7 @@ init_main(void *arg) {
     assert(initproc->cptr == kswapd && initproc->yptr == NULL && initproc->optr == NULL);
     assert(kswapd->cptr == NULL && kswapd->yptr == NULL && kswapd->optr == NULL);
     assert(nr_process == 3);
-    assert(nr_free_pages_store == nr_free_pages());
+    assert(nr_used_pages_store == nr_used_pages());
     assert(slab_allocated_store == slab_allocated());
     kprintf("init check memory pass.\n");
     return 0;

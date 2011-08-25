@@ -67,7 +67,6 @@ void
 ap_boot_init(void)
 {
     lgdt(&gdt_pd);
-	load_rsp0(lapic_id(), boot_ap_stack + PGSIZE * lapic_id());
 	ltr(GD_TSS(lapic_id()));
 	lidt(&idt_pd);
 	lapic_init_ap();

@@ -12,3 +12,4 @@ fi
 
 kern_sect_size=$(echo "(( $size + 511 ) / 512)" | bc)
 echo $kern_sect_size > ${T_BIN}/kern-sect_size
+rm -f ${T_BIN}/bootloader-*
