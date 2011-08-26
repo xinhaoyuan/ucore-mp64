@@ -47,7 +47,8 @@ jump_kern(void)
 	pgd_t *pgdir;
 	pgdir = lcpu_static[lapic_id()].init_pgdir = (pgd_t *)page2kva(alloc_page());
 	memcpy(pgdir, boot_pgdir, PGSIZE);
-	
+
+	pgdir[0]        = 0;
 	pgdir[PGX(VPT)] = PADDR(pgdir) | PTE_P | PTE_W;
 
 	uintptr_t i;
@@ -67,6 +68,12 @@ jump_kern(void)
 	}
 
 	lcr3(PADDR(pgdir));
+	/* Setup cr0 protection */
+	uint64_t cr0 = rcr0();
+    cr0 |= CR0_PE | CR0_PG | CR0_AM | CR0_WP | CR0_NE | CR0_TS | CR0_EM | CR0_MP;
+    cr0 &= ~(CR0_TS | CR0_EM);
+    lcr0(cr0);
+	
 	memmove((void *)kern_bootinfo.kern_data,
 			kern_data + kern_bootinfo.kern_data - kern_bootinfo.kern_text,
 			kern_bootinfo.kern_bss - kern_bootinfo.kern_data);

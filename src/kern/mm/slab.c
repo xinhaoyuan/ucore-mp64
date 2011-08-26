@@ -315,7 +315,7 @@ kmem_cache_grow(kmem_cache_t *cachep) {
         SetPageSlab(page);
         page = NEXT_PAGE(page);
     } while (-- order_size);
-
+	
     int i;
     for (i = 0; i < cachep->num; i ++) {
         slab_bufctl(slabp)[i] = i + 1;
@@ -370,7 +370,6 @@ try_again:
 
 alloc_new_slab:
     local_intr_restore(intr_flag);
-
     if (kmem_cache_grow(cachep)) {
         goto try_again;
     }
@@ -401,7 +400,7 @@ kmem_slab_destroy(kmem_cache_t *cachep, slab_t *slabp) {
     do {
         assert(PageSlab(p));
         ClearPageSlab(p);
-        p ++;
+        p = NEXT_PAGE(p);
     } while (-- order_size);
 
     free_pages(page, 1 << cachep->page_order);
@@ -496,7 +495,6 @@ check_slab(void) {
 
     struct Page *p0, *p1;
     size_t order_size;
-
 
     p0 = kva2page(slabp0->s_mem - slabp0->offset), p1 = p0;
     order_size = (1 << cachep0->page_order);

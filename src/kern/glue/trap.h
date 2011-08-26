@@ -1,5 +1,5 @@
-#ifndef __KERN_TRAP_TRAP_H__
-#define __KERN_TRAP_TRAP_H__
+#ifndef __GLUE_TRAP_H__
+#define __GLUE_TRAP_H__
 
 #include <types.h>
 
@@ -75,10 +75,10 @@ struct trapframe {
     uint16_t tf_padding3[3];
 } __attribute__((packed));
 
-void idt_init(void);
+void trap_init(void);
 void print_trapframe(struct trapframe *tf);
 void print_regs(struct pushregs *regs);
 bool trap_in_kernel(struct trapframe *tf);
 
-#endif /* !__KERN_TRAP_TRAP_H__ */
+#endif
 

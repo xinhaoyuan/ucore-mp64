@@ -1,12 +1,7 @@
 #include <kio.h>
 #include <mp.h>
 #include <intr.h>
-
-void
-kbd_intr(int n, struct trapframe *tf)
-{
-	kprintf("KBD\n");
-}
+#include <vmm.h>
 
 void
 __kern_entry(void)
@@ -15,6 +10,19 @@ __kern_entry(void)
 	{
 		pmm_init();
 		slab_init();
+		
+		trap_init();
+		vmm_init();                 // init virtual memory management
+
+		sched_init();               // init scheduler
+		proc_init();                // init process table
+		sync_init();                // init sync struct
+
+		ide_init();
+		swap_init();                // init swap
+		fs_init();                  // init fs
+
+		kprintf("finished.\n");
 	}
 	
 	while (1) ;

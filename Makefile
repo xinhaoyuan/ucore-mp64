@@ -13,9 +13,13 @@ bin:
 	@mkdir bin
 
 clean:
-	rm -rf ${T_BIN}/*
+	-rm -rf ${T_BIN}/*
+
 
 qemu: all
-	qemu-system-x86_64 -smp 4 ${T_BIN}/image \
+	qemu-system-x86_64 -smp 4 \
+	-hda ${T_BIN}/kernel.img \
+	-drive file=${T_BIN}/swap.img,media=disk,cache=writeback \
+	-drive file=${T_BIN}/sfs.img,media=disk,cache=writeback \
 	-s -S \
 	-serial file:bin/serial.log -monitor stdio

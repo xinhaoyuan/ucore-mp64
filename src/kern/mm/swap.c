@@ -754,7 +754,7 @@ check_swap(void) {
 
     size_t count = nr_used_pages();
     swap_remove_entry(entry);
-    assert(nr_inactive_pages == 0 && nr_used_pages() == count + 1);
+    assert(nr_inactive_pages == 0 && nr_used_pages() == count - 1);
 
     // check swap_out_mm
 
@@ -837,7 +837,7 @@ check_swap(void) {
     count = nr_used_pages();
     refill_inactive_scan();
     page_launder();
-    assert(count + 1 == nr_used_pages());
+    assert(count - 1 == nr_used_pages());
 
     ret = swapfs_read(entry, rp1);
     assert(ret == 0 && *(char *)(page2kva(rp1)) == (char)0xEF);

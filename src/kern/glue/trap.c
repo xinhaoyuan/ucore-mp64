@@ -16,25 +16,9 @@
 #include <error.h>
 #include <kio.h>
 #include <clock.h>
+#include <intr.h>
 
 #define TICK_NUM 30
-
-static struct gatedesc idt[256] = {{0}};
-
-static struct pseudodesc idt_pd = {
-    sizeof(idt) - 1, (uintptr_t)idt
-};
-
-void
-idt_init(void) {
-    extern uintptr_t __vectors[];
-    int i;
-    for (i = 0; i < sizeof(idt) / sizeof(struct gatedesc); i ++) {
-        SETGATE(idt[i], 1, GD_KTEXT, __vectors[i], DPL_KERNEL);
-    }
-    SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
-    lidt(&idt_pd);
-}
 
 static const char *
 trapname(int trapno) {
@@ -163,11 +147,11 @@ pgfault_handler(struct trapframe *tf) {
 }
 
 static void
-trap_dispatch(struct trapframe *tf) {
+ex_dispatch(int ex_no, struct trapframe *tf) {
     char c;
     int ret;
 
-    switch (tf->tf_trapno) {
+    switch (ex_no) {
     case T_PGFLT:
         if ((ret = pgfault_handler(tf)) != 0) {
             print_trapframe(tf);
@@ -183,10 +167,25 @@ trap_dispatch(struct trapframe *tf) {
             }
         }
         break;
-    case T_SYSCALL:
-        syscall();
-        break;
-    case IRQ_OFFSET + IRQ_TIMER:
+	default:
+        print_trapframe(tf);
+        if (current != NULL) {
+            kprintf("unhandled trap.\n");
+            do_exit(-E_KILLED);
+        }
+        panic("unexpected trap in kernel.\n");
+	}
+}
+
+static void
+irq_dispatch(int irq_no, struct trapframe *tf)
+{
+	char c;
+    int ret;
+	
+	switch (irq_no)
+	{
+    case IRQ_TIMER:
         ticks ++;
         assert(current != NULL);
         run_timer_list();
@@ -200,20 +199,14 @@ trap_dispatch(struct trapframe *tf) {
         dev_stdin_write(c);
 #endif
         break;
-    case IRQ_OFFSET + IRQ_IDE1:
-    case IRQ_OFFSET + IRQ_IDE2:
+    case IRQ_IDE1:
+    case IRQ_IDE2:
         /* do nothing */
         break;
-    default:
-        print_trapframe(tf);
-        if (current != NULL) {
-            kprintf("unhandled trap.\n");
-            do_exit(-E_KILLED);
-        }
-        panic("unexpected trap in kernel.\n");
     }
 }
 
+#if 0
 void
 trap(struct trapframe *tf) {
     // used for previous projects
@@ -238,4 +231,12 @@ trap(struct trapframe *tf) {
         }
     }
 }
+#endif
 
+void
+trap_init(void)
+{
+	int i;
+	for (i = 0; i < 32; ++ i)
+		ex_handler_set(i, ex_dispatch);
+}
