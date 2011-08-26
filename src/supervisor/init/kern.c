@@ -188,6 +188,12 @@ tick_init(int freq)
 	lapic_set_timer(freq);
 }
 
+int
+kcons_getc(void)
+{
+	return cons_getc();
+}
+
 EXPORT_SYMBOL(context_fill);
 EXPORT_SYMBOL(context_switch);
 EXPORT_SYMBOL(vkprintf);
@@ -205,3 +211,4 @@ EXPORT_SYMBOL(kalloc_pages);
 EXPORT_SYMBOL(kfree_pages);
 EXPORT_SYMBOL(load_rsp0);
 EXPORT_SYMBOL(tick_init);
+EXPORT_SYMBOL(kcons_getc);

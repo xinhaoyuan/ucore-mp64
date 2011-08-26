@@ -1278,7 +1278,7 @@ user_main(void *arg) {
     KERNEL_EXECVE2(TEST);
 #endif
 #else
-    KERNEL_EXECVE(hello);
+    KERNEL_EXECVE(sh);
 #endif
     panic("user_main execve failed.\n");
 }

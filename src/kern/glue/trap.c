@@ -177,12 +177,10 @@ trap_dispatch(struct trapframe *tf) {
         break;
     case IRQ_OFFSET + IRQ_COM1:
     case IRQ_OFFSET + IRQ_KBD:
-#if 0
-        c = cons_getc();
+        c = kcons_getc();
 
         extern void dev_stdin_write(char c);
         dev_stdin_write(c);
-#endif
         break;
     case IRQ_OFFSET + IRQ_IDE1:
     case IRQ_OFFSET + IRQ_IDE2:
@@ -230,5 +228,8 @@ trap_init(void)
 	for (i = 0; i < 32; ++ i)
 		intr_handler_set(i, trap);
 	intr_handler_set(IRQ_OFFSET + IRQ_TIMER, trap);
+	intr_handler_set(IRQ_OFFSET + IRQ_COM1, trap);
+	intr_handler_set(IRQ_OFFSET + IRQ_KBD, trap);
+	irq_enable(IRQ_KBD);
 	intr_handler_set(T_SYSCALL, trap);
 }
