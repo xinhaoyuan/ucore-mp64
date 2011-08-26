@@ -4,6 +4,7 @@
 #include <types.h>
 
 /* Trap Numbers */
+#define T_SYSCALL               0x80
 
 /* Processor-defined: */
 #define T_DIVIDE                0   // divide error

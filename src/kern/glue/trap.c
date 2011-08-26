@@ -147,11 +147,11 @@ pgfault_handler(struct trapframe *tf) {
 }
 
 static void
-ex_dispatch(int ex_no, struct trapframe *tf) {
+trap_dispatch(struct trapframe *tf) {
     char c;
     int ret;
 
-    switch (ex_no) {
+    switch (tf->tf_trapno) {
     case T_PGFLT:
         if ((ret = pgfault_handler(tf)) != 0) {
             print_trapframe(tf);
@@ -167,25 +167,10 @@ ex_dispatch(int ex_no, struct trapframe *tf) {
             }
         }
         break;
-	default:
-        print_trapframe(tf);
-        if (current != NULL) {
-            kprintf("unhandled trap.\n");
-            do_exit(-E_KILLED);
-        }
-        panic("unexpected trap in kernel.\n");
-	}
-}
-
-static void
-irq_dispatch(int irq_no, struct trapframe *tf)
-{
-	char c;
-    int ret;
-	
-	switch (irq_no)
-	{
-    case IRQ_TIMER:
+    case T_SYSCALL:
+        syscall();
+        break;
+    case IRQ_OFFSET + IRQ_TIMER:
         ticks ++;
         assert(current != NULL);
         run_timer_list();
@@ -199,14 +184,20 @@ irq_dispatch(int irq_no, struct trapframe *tf)
         dev_stdin_write(c);
 #endif
         break;
-    case IRQ_IDE1:
-    case IRQ_IDE2:
+    case IRQ_OFFSET + IRQ_IDE1:
+    case IRQ_OFFSET + IRQ_IDE2:
         /* do nothing */
         break;
+    default:
+        print_trapframe(tf);
+        if (current != NULL) {
+            kprintf("unhandled trap.\n");
+            do_exit(-E_KILLED);
+        }
+        panic("unexpected trap in kernel.\n");
     }
 }
 
-#if 0
 void
 trap(struct trapframe *tf) {
     // used for previous projects
@@ -231,12 +222,13 @@ trap(struct trapframe *tf) {
         }
     }
 }
-#endif
 
 void
 trap_init(void)
 {
 	int i;
 	for (i = 0; i < 32; ++ i)
-		ex_handler_set(i, ex_dispatch);
+		intr_handler_set(i, trap);
+	intr_handler_set(IRQ_OFFSET + IRQ_TIMER, trap);
+	intr_handler_set(T_SYSCALL, trap);
 }

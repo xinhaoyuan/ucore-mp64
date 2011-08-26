@@ -874,7 +874,7 @@ failed_cleanup:
 }
 
 int
-do_execve(const char *name, int argc, const char **argv) {
+do_execve(const char *name, int argc, const char **argv) {   
     static_assert(EXEC_MAX_ARG_LEN >= FS_MAX_FPATH_LEN);
     struct mm_struct *mm = current->mm;
     if (!(argc >= 1 && argc <= EXEC_MAX_ARG_NUM)) {
@@ -888,7 +888,6 @@ do_execve(const char *name, int argc, const char **argv) {
     const char *path;
 
     int ret = -E_INVAL;
-
     lock_mm(mm);
     if (name == NULL) {
         snprintf(local_name, sizeof(local_name), "<null> %d", current->pid);
@@ -1279,7 +1278,7 @@ user_main(void *arg) {
     KERNEL_EXECVE2(TEST);
 #endif
 #else
-    KERNEL_EXECVE(sh);
+    KERNEL_EXECVE(hello);
 #endif
     panic("user_main execve failed.\n");
 }

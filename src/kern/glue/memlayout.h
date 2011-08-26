@@ -51,8 +51,9 @@
 #define USER_ACCESS(start, end)                     \
     (USERBASE <= (start) && (start) < (end) && (end) <= USERTOP)
 
-#define KERN_ACCESS(start, end)                     \
-    (KERNBASE <= (start) && (start) < (end) && (end) <= KERNTOP)
+#define KERN_ACCESS(start, end)										\
+    (KERNBASE <= (start) && (start) < (end) && (end) <= KERNTOP ||	\
+	 ((start) < (end) && 0xFFFFFFFF80000000 <= (start)))
 
 #ifndef __ASSEMBLER__
 

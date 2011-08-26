@@ -22,7 +22,10 @@ __kern_entry(void)
 		swap_init();                // init swap
 		fs_init();                  // init fs
 
-		kprintf("finished.\n");
+		clock_init();
+		intr_enable();
+
+		cpu_idle();                 // run idle process
 	}
 	
 	while (1) ;

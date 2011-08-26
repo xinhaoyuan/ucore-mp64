@@ -24,6 +24,7 @@ idt_init(void) {
     for (i = 0; i < sizeof(idt) / sizeof(struct gatedesc); i ++) {
         SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
     }
+	SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
     lidt(&idt_pd);
 }
 
@@ -117,11 +118,27 @@ print_regs(struct pushregs *regs) {
 static void
 trap_dispatch(struct trapframe *tf) {
 	int lcpu_id = lapic_id();
-	if (tf->tf_trapno < IRQ_OFFSET)
+	intr_handler_f h = lcpu_static[lcpu_id].intr_handler[tf->tf_trapno];
+
+	if (tf->tf_trapno >= IRQ_OFFSET && tf->tf_trapno < IRQ_OFFSET + IRQ_COUNT)
 	{
-		ex_handler_f h = lcpu_static[lcpu_id].ex_handler[tf->tf_trapno];
+		if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER)
+		{
+			if (h != NULL)
+				h(tf);
+		}
+		else
+		{
+			if (h != NULL && lcpu_id == irq_control[tf->tf_trapno - IRQ_OFFSET].lcpu_apic_id)
+				h(tf);
+		}
+
+		lapic_send_eoi();
+	}
+	else
+	{
 		if (h != NULL)
-			h(tf->tf_trapno, tf);
+			h(tf);
 		else
 		{
 			// in kernel, it must be a mistake
@@ -131,22 +148,6 @@ trap_dispatch(struct trapframe *tf) {
 			}
 		}
 	}
-	else if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER)
-	{
-		irq_handler_f h = lcpu_static[lcpu_id].tick_handler;
-		if (h != NULL)
-			h(IRQ_TIMER, tf);
-	}
-	else
-	{
-		int irq_no = tf->tf_trapno - IRQ_OFFSET;
-		irq_handler_f h = irq_control[irq_no].handler;
-		if (h != NULL && lcpu_id == irq_control[irq_no].lcpu_apic_id)
-			h(irq_no, tf);
-	}
-	/* XXX: SYSCALL */
-
-	lapic_send_eoi();
 }
 
 void

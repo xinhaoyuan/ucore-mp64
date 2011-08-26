@@ -8,6 +8,8 @@ extern volatile size_t ticks;
 
 #define tick_init (*tick_init_ptr)
 
-extern void tick_init(int freq, irq_handler_f handler);
+extern void tick_init(int freq);
+
+void clock_init(void);
 
 #endif

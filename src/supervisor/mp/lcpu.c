@@ -14,6 +14,5 @@ lcpu_dynamic_s lcpu_dynamic[LAPIC_COUNT];
 void
 lcpu_init(void)
 {
-	intr_enable();
 	jump_kern();
 }
