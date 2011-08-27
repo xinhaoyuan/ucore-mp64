@@ -21,4 +21,8 @@ extern int   kcons_getc(void);
 #define kacquire_try (*kacquire_try_ptr)
 #define krelease     (*krelease_ptr)
 
+void kacquire(int id);
+int  kacquire_try(int id);
+void krelease(int id);
+
 #endif
