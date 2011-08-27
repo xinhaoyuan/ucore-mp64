@@ -24,6 +24,7 @@ typedef struct irq_control_s
 extern irq_control_s irq_control[IRQ_COUNT];
 
 extern unsigned int   lcpu_id_set[LAPIC_COUNT];
+extern unsigned int   lcpu_id_inv[LAPIC_COUNT];
 /* Indexed by APIC ID */
 extern lcpu_static_s  lcpu_static[LAPIC_COUNT];
 extern lcpu_dynamic_s lcpu_dynamic[LAPIC_COUNT];

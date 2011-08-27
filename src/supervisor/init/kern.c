@@ -8,6 +8,7 @@
 #include <x86.h>
 #include <spinlock.h>
 #include <stdio.h>
+#include <sysconf.h>
 
 kern_bootinfo_s kern_bootinfo;
 char *kern_data;
@@ -252,6 +253,18 @@ krelease(int id)
 	local_intr_restore(intr_flag);
 }
 
+unsigned int
+lcpu_idx(void)
+{
+	return lcpu_id_inv[lapic_id()];
+}
+
+unsigned int
+lcpu_count(void)
+{
+	return sysconf.lcpu_count;
+}
+
 EXPORT_SYMBOL(context_fill);
 EXPORT_SYMBOL(context_switch);
 EXPORT_SYMBOL(vkprintf);
@@ -273,3 +286,5 @@ EXPORT_SYMBOL(kcons_getc);
 EXPORT_SYMBOL(kacquire);
 EXPORT_SYMBOL(kacquire_try);
 EXPORT_SYMBOL(krelease);
+EXPORT_SYMBOL(lcpu_idx);
+EXPORT_SYMBOL(lcpu_count);

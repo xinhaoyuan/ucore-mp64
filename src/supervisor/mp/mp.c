@@ -25,7 +25,10 @@ mp_init(void)
 
 	int i, max_apic = 0;
 	for (i = 0; i != sysconf.lcpu_count; ++ i)
+	{
+		lcpu_id_inv[lcpu_id_set[i]] = i;
 		if (lcpu_id_set[i] > max_apic) max_apic = lcpu_id_set[i];
+	}
 
 	boot_ap_stack = (uintptr_t)page2kva(alloc_pages(max_apic));
 	memset(KADDR(BOOT_AP_STACK_BASE), 0, 8);
