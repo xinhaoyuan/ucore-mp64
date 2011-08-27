@@ -39,7 +39,14 @@ load_kern(void)
 		kern_data_size / SECTSIZE);
 }
 
-spinlock_s kprintf_lock;
+static spinlock_s kprintf_lock;
+
+#define KRES_COUNT 1024
+
+static struct {
+	int lcpu;
+	spinlock_s lock;
+} kres[KRES_COUNT];
 
 void
 jump_kern(void)
@@ -81,6 +88,11 @@ jump_kern(void)
 		   0, kern_bootinfo.kern_end - kern_bootinfo.kern_bss);
 
 	spinlock_init(&kprintf_lock);
+	for (i = 0; i != KRES_COUNT; ++ i)
+	{
+		kres[i].lcpu = -1;
+		spinlock_init(&kres[i].lock);
+	}
 	((void(*)(void))kern_bootinfo.kern_entry)();
 	
 	while (1) ;
@@ -194,6 +206,52 @@ kcons_getc(void)
 	return cons_getc();
 }
 
+int
+kacquire_try(int id)
+{
+	if (id < 0 || id >= KRES_COUNT) return 0;
+	bool intr_flag;
+	int result = lapic_id();
+	
+	local_intr_save(intr_flag);
+	if (spinlock_acquire_try(&kres[id].lock))
+	{
+		kres[id].lcpu = result;
+	}
+	result = kres[id].lcpu == result;
+	local_intr_restore(intr_flag);
+
+	return result;
+}
+
+void
+kacquire(int id)
+{
+	if (id < 0 || id >= KRES_COUNT) return;
+	bool intr_flag;
+	local_intr_save(intr_flag);
+	if (kres[id].lcpu != lapic_id())
+	{
+		spinlock_acquire(&kres[id].lock);
+		kres[id].lcpu = lapic_id();
+	}
+	local_intr_restore(intr_flag);
+}
+
+void
+krelease(int id)
+{
+	if (id < 0 || id >= KRES_COUNT) return;
+	bool intr_flag;
+	local_intr_save(intr_flag);
+	if (kres[id].lcpu == lapic_id())
+	{
+		kres[id].lcpu = -1;
+		spinlock_release(&kres[id].lock);
+	}
+	local_intr_restore(intr_flag);
+}
+
 EXPORT_SYMBOL(context_fill);
 EXPORT_SYMBOL(context_switch);
 EXPORT_SYMBOL(vkprintf);
@@ -212,3 +270,6 @@ EXPORT_SYMBOL(kfree_pages);
 EXPORT_SYMBOL(load_rsp0);
 EXPORT_SYMBOL(tick_init);
 EXPORT_SYMBOL(kcons_getc);
+EXPORT_SYMBOL(kacquire);
+EXPORT_SYMBOL(kacquire_try);
+EXPORT_SYMBOL(krelease);

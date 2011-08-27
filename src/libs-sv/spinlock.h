@@ -18,7 +18,7 @@ spinlock_acquire(spinlock_t lock)
 }
 
 static inline int
-spinlock_try_acquire(spinlock_t lock)
+spinlock_acquire_try(spinlock_t lock)
 {
 	return !xchg32(&lock->lock, 1);
 }

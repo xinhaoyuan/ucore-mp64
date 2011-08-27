@@ -7,12 +7,12 @@
 #include <assert.h>
 #include <kio.h>
 
-#define kalloc_pages      (*kalloc_pages_ptr)
-#define kfree_pages       (*kfree_pages_ptr)
+#define kalloc_pages (*kalloc_pages_ptr)
+#define kfree_pages (*kfree_pages_ptr)
 #define kpage_private_set (*kpage_private_set_ptr)
 #define kpage_private_get (*kpage_private_get_ptr)
-#define load_rsp0         (*load_rsp0_ptr)
-#define init_pgdir_get    (*init_pgdir_get_ptr)
+#define load_rsp0 (*load_rsp0_ptr)
+#define init_pgdir_get (*init_pgdir_get_ptr)
 
 extern uintptr_t kalloc_pages(size_t npages);
 extern void      kfree_pages(uintptr_t basepa, size_t npages);

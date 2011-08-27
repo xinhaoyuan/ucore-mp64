@@ -4,6 +4,7 @@ export V        ?= @
 export T_BASE   ?= ${PWD}
 export T_OBJ    ?= ${PWD}/obj
 export MAKE     := make -s
+QEMU            ?= qemu-system-x86_64
 
 all: ${T_OBJ}
 	${V}${MAKE} -f mk/mods.mk all
@@ -17,7 +18,7 @@ clean:
 
 
 qemu: all
-	qemu-system-x86_64 -smp 4 \
+	${QEMU} -smp 4 \
 	-hda ${T_OBJ}/kernel.img \
 	-drive file=${T_OBJ}/swap.img,media=disk,cache=writeback \
 	-drive file=${T_OBJ}/sfs.img,media=disk,cache=writeback \
