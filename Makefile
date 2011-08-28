@@ -23,4 +23,4 @@ qemu: all
 	-drive file=${T_OBJ}/swap.img,media=disk,cache=writeback \
 	-drive file=${T_OBJ}/sfs.img,media=disk,cache=writeback \
 	-s -S \
-	-serial file:obj/serial.log -monitor stdio
+	-serial file:${T_OBJ}/serial.log -monitor stdio
