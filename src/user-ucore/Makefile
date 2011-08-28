@@ -17,6 +17,7 @@ all: ${T_OBJ}/user-sfs ${BINFILES}
 ${T_OBJ}/user-sfs/bin/%: ${T_OBJ}/user-ucore-$(call E_ENCODE,%).c.o
 	@echo LD $@
 	${V}${LD} -T user.ld ${T_OBJ}/libs-user-ucore-*.o $< -o$@
+	@touch ${T_OBJ}/user-sfs-timestamp
 
 
 ${T_OBJ}/user-sfs:
