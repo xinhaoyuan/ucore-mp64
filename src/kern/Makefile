@@ -1,7 +1,7 @@
 .PHONY: all
 
 SRCFILES   := $(shell find . '(' '!' -regex '.*/_.*' ')' -and '(' -iname "*.c" -or -iname "*.S" ')' | sed -e 's!\./!!g')
-T_CC_FLAGS := 	-I../libs-kern -Iglue -Ilibs -Idebug -Idriver -Imm -Isync -Ischedule -Iprocess -Ifs \
+T_CC_FLAGS := 	-Iglue -Iglue/libs -Ilibs -Idebug -Idriver -Imm -Isync -Ischedule -Iprocess -Ifs \
 				-Ifs/swap -Ifs/vfs -Ifs/pipe -Ifs/sfs -Ifs/devs -Isyscall
 
 include ${T_BASE}/mk/compk.mk
@@ -16,7 +16,7 @@ ${T_OBJ}/kern-bin: ${T_OBJ}/kern
 
 ${T_OBJ}/kern: ${OBJFILES} ${T_OBJ}/kern-svsym.S.o kern.ld
 	@echo LD $@
-	${V}${LD} -T kern.ld -z max-page-size=0x1000 -o$@ $^ ${T_OBJ}/libs-kern-*.o
+	${V}${LD} -T kern.ld -z max-page-size=0x1000 -o$@ $^
 
 ${T_OBJ}/svsym.o: ${T_OBJ}/supervisor
 	${V}objcopy --extract-symbol $< $@
