@@ -1,4 +1,4 @@
-#include <kio.h>
+#include <glue/kio.h>
 
 int
 kprintf(const char *fmt, ...)

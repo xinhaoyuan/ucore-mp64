@@ -1,7 +1,7 @@
 #ifndef __GLUE_CONTEXT_H__
 #define __GLUE_CONTEXT_H__
 
-#include <types.h>
+#include <libs/types.h>
 
 /* Symbols from supervisor */
 typedef struct context_s

@@ -1,8 +1,8 @@
 #ifndef __GLUE_KIO_H__
 #define __GLUE_KIO_H__
 
-#include <types.h>
-#include <stdarg.h>
+#include <libs/types.h>
+#include <libs/stdarg.h>
 
 #define vkprintf   (*vkprintf_ptr)
 int                  kprintf(const char *fmt, ...);
