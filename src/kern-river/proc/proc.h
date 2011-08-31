@@ -21,7 +21,7 @@ typedef struct proc_s
 	context_s    kern_ctx;
 	sched_node_s sched_node;
 	uint32_t     time_slice;
-	uint32_t     intr;
+	uint32_t     irq_save_level;
 
 	proc_idle_f  idle;
 	void        *private;

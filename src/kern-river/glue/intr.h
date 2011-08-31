@@ -91,7 +91,10 @@ extern void irq_enable(int irq);
 extern void irq_disable(int irq);
 extern void irq_ack(int irq);
 
-#define local_intr_save(x)      do { x = (read_rflags() & FL_IF) != 0; __asm __volatile ("cli"); } while (0)
-#define local_intr_restore(x)   do { if (x)  __asm __volatile ("sti"); } while (0)
+#define local_intr_enable_hw  do { __asm __volatile ("sti"); } while (0)
+#define local_intr_disable_hw do { __asm __volatile ("cli"); } while (0)
+
+#define local_intr_save_hw(x)      do { x = (read_rflags() & FL_IF) != 0; __asm __volatile ("cli"); } while (0)
+#define local_intr_restore_hw(x)   do { if (x)  __asm __volatile ("sti"); } while (0)
 
 #endif

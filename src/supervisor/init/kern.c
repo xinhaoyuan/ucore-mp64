@@ -97,9 +97,9 @@ jump_kern(void)
 }
 
 void
-kputchar(int c)
+kcons_putc(int c)
 {
-	cputchar(c);
+	cons_putc(c);
 }
 
 int
@@ -195,7 +195,7 @@ lcpu_count_get(void)
 
 EXPORT_SYMBOL(context_fill);
 EXPORT_SYMBOL(context_switch);
-EXPORT_SYMBOL(kputchar);
+EXPORT_SYMBOL(kcons_putc);
 EXPORT_SYMBOL(kcons_getc);
 EXPORT_SYMBOL(intr_handler_set);
 EXPORT_SYMBOL(irq_enable);

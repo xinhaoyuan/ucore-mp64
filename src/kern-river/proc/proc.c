@@ -16,7 +16,7 @@
 #define PROC_TIME_SLICE_DEFAULT 50
 
 PLS proc_t proc_current;
-PLS proc_t proc_idle;
+PLS proc_s proc_idle;
 
 static void
 proc_switch(proc_t proc)
@@ -29,7 +29,7 @@ proc_switch(proc_t proc)
 void
 proc_schedule(void)
 {
-	local_intr_save(proc_current->intr);
+	local_irq_save();
 	if (proc_current->time_slice == 0)
 	{
 		if (proc_current->type != PROC_TYPE_IDLE &&
@@ -46,7 +46,7 @@ proc_schedule(void)
 		}
 		else
 		{
-			nproc = proc_idle;
+			nproc = &proc_idle;
 		}
 
 		nproc->time_slice = PROC_TIME_SLICE_DEFAULT;
@@ -55,7 +55,7 @@ proc_schedule(void)
 			proc_switch(nproc);
 		}
 	}
-	local_intr_restore(proc_current->intr);
+	local_irq_restore();
 }
 
 static void
@@ -112,6 +112,8 @@ proc_create(const char *name, proc_idle_f idle, void *private, uintptr_t stack)
 	proc->type     = PROC_TYPE_UNKNOWN;
 	proc->idle     = idle;
 	proc->private  = private;
+
+	proc->irq_save_level = 0;
 	 
 	context_fill(&proc->kern_ctx, (void(*)(void *))proc_public_entry, proc, stack);
 	sched_node_init(&proc->sched_node);
@@ -141,9 +143,7 @@ proc_init(void)
 	/* XXX */
 	event_pool_init(NULL, NULL, NULL, NULL);
 	
-	proc_t proc;
-	if ((proc = (proc_t)kalloc(sizeof(proc_s))) == NULL)
-		return -1;
+	proc_t proc = &proc_idle;
 
 	strcpy(proc->name, "idle");
 	proc->name[MAX_PROC_NAME - 1] = 0;
@@ -151,16 +151,18 @@ proc_init(void)
 	proc->type     = PROC_TYPE_IDLE;
 	proc->idle     = idle_idle;
 	proc->private  = NULL;
-	
+
+	proc->irq_save_level = 0;
+
 	proc->kern_ctx.lcpu = lapic_id;
 	proc->kern_ctx.stk_top = 0x0;
-	
+		
 	sched_node_init(&proc->sched_node);
 	event_pool_init(&proc->event_pool, proc_ep_touch, proc_ep_exhaust, proc_ep_stop);
 	
 	proc->time_slice = PROC_TIME_SLICE_DEFAULT;
 	proc->status     = PROC_STATUS_RUNNABLE;
 
-	proc_current = proc_idle = proc;
+	proc_current = proc;
 	return 0;
 }

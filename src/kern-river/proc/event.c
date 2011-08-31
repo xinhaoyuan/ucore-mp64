@@ -39,8 +39,7 @@ event_init(event_t event, event_pool_t pool, event_handler_f handler, void *priv
 int
 event_activate(event_t event)
 {
-	bool flag;
-	local_intr_save(flag);
+	local_irq_save();
 
 	if (event->status = EVENT_STATUS_WAIT)
 	{
@@ -59,7 +58,7 @@ event_activate(event_t event)
 		}
 	}
 	
-	local_intr_restore(flag);
+	local_irq_restore();
 	return 0;
 }
 
@@ -69,16 +68,15 @@ event_loop(event_pool_t pool)
 	if (pool == NULL)
 		pool = &global_pool;
 	
-	bool flag;
 	while (1)
 	{
 		event_t event;
-		local_intr_save(flag);
+		local_irq_save();
 		if (pool->head == NULL)
 		{
 			if (pool->stop)
 			{
-				local_intr_restore(flag);
+				local_irq_restore();
 				break;
 			}
 			event = NULL;
@@ -92,7 +90,7 @@ event_loop(event_pool_t pool)
 				pool->tail = NULL;
 			}
 		}
-		local_intr_restore(flag);
+		local_irq_restore();
 
 		if (event)
 			event->handler(event);

@@ -73,16 +73,15 @@ kmm_ialloc(kmm_ctrl_s *ctrl)
 void *
 kalloc(size_t size)
 {
-	int flag;
-	local_intr_save(flag);
+	local_irq_save();
 	int size_index = bsr(size + META_SIZE - 1) - MIN_SHIFT + 1;
 	 
 	void *result;
 	if (size_index < 0 || size_index > ALLOC_DELTA_SHIFT)
 		result = NULL;
 	else result = kmm_ialloc((kmm_ctrl_s *)ctrl + size_index);
-	 
-	local_intr_restore(flag);
+
+	local_irq_restore();
 	return result;
 }
 
@@ -90,8 +89,7 @@ void
 kfree(void *ptr)
 {
 	if (ptr == NULL) return;
-	int flag;
-	local_intr_save(flag);
+	local_irq_save();
 	 
 	uintptr_t *head = ((uintptr_t *)ptr - 1);
 	kmm_ctrl_s *ctrl = (kmm_ctrl_s *)*head;
@@ -99,5 +97,5 @@ kfree(void *ptr)
 	*head = ctrl->head;
 	ctrl->head = (uintptr_t)head;
 	
-	local_intr_restore(flag);
+	local_irq_restore();
 }

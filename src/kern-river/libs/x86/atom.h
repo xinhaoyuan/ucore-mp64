@@ -1,7 +1,7 @@
 #ifndef __ATOM_H__
 #define __ATOM_H__
 
-#include <libs/x86/types.h>
+#include <libs/types.h>
 
 static __inline uint64_t
 xchg64(volatile void *addr, uint64_t newval)
