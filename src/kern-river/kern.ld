@@ -24,6 +24,12 @@ SECTIONS {
     }
 
 	. = ALIGN(0x1000);
+	PROVIDE(__kern_pls_start = .);
+	.pls : {
+		 *(.pls)
+	}
+
+	. = ALIGN(0x1000);
 	PROVIDE(__kern_data_start = .);
     .data : {
         *(.data)

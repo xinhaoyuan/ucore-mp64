@@ -2,6 +2,7 @@
 #define __GLUE_PMM_H__
 
 #include <libs/types.h>
+#include <memlayout.h>
 
 #define kalloc_pages      (*kalloc_pages_ptr)
 #define kfree_pages       (*kfree_pages_ptr)
@@ -18,7 +19,7 @@ extern void      load_rsp0(uintptr_t rsp0);
 extern pgd_t    *init_pgdir_get(void);
 
 /* Simply translate between VA and PA without checking */
-#define KADDR(addr) ((void*)((uintptr_t)(addr) + PBASE))
-#define PADDR(addr) ((uintptr_t)(addr) - PBASE)
+#define KADDR_DIRECT(addr) ((void*)((uintptr_t)(addr) + PBASE))
+#define PADDR_DIRECT(addr) ((uintptr_t)(addr) - PBASE)
 
 #endif

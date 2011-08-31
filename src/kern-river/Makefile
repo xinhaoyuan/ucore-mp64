@@ -1,7 +1,7 @@
 .PHONY: all
 
 SRCFILES   := $(shell find . '(' '!' -regex '.*/_.*' ')' -and '(' -iname "*.c" -or -iname "*.S" ')' | sed -e 's!\./!!g')
-T_CC_FLAGS := 	-I.
+T_CC_FLAGS := 	-Iglue -I.
 
 include ${T_BASE}/mk/compk.mk
 include ${T_BASE}/mk/template.mk

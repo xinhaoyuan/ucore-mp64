@@ -7,3 +7,4 @@ here:
 		.quad __kern_data_start
 		.quad __kern_bss_start
 		.quad __kern_end
+		.quad 0x0

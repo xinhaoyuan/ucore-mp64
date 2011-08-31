@@ -208,7 +208,9 @@ trap(struct trapframe *tf) {
         current->tf = tf;
 
         bool in_kernel = trap_in_kernel(tf);
-
+		if (!in_kernel)
+			KERNEL_ENTER;
+		
         trap_dispatch(tf);
 
         current->tf = otf;
@@ -217,6 +219,7 @@ trap(struct trapframe *tf) {
             if (current->need_resched) {
                 schedule();
             }
+			KERNEL_EXIT;
         }
     }
 }

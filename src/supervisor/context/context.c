@@ -45,11 +45,10 @@ context_deadend(context_t ctx)
 }
 
 void
-context_fill(context_t ctx, void (*entry)(void *arg), void *arg, uintptr_t vpt, uintptr_t stk_top)
+context_fill(context_t ctx, void (*entry)(void *arg), void *arg, uintptr_t stk_top)
 {
 	if (ctx->lcpu == -1) ctx->lcpu = lapic_id();
 	 
-	ctx->vpt     = vpt;
 	ctx->stk_top = stk_top;
 	ctx->stk_ptr = ctx->stk_top;
 	 

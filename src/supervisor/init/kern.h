@@ -13,6 +13,7 @@ typedef struct kern_bootinfo_s
 			uintptr_t kern_entry;
 			uintptr_t kern_text;
 			uintptr_t kern_rodata;
+			uintptr_t kern_pls;
 			uintptr_t kern_data;
 			uintptr_t kern_bss;
 			uintptr_t kern_end;

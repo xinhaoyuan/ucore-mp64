@@ -79,14 +79,12 @@ list_entry_t proc_mm_list;
 // has list for process set based on pid
 static list_entry_t hash_list[HASH_LIST_SIZE];
 
-// idle proc
-struct proc_struct *idleproc = NULL;
-// init proc
-struct proc_struct *initproc = NULL;
 // current proc
-struct proc_struct *current = NULL;
-// swap daemon proc
-struct proc_struct *kswapd = NULL;
+struct proc_struct *
+proc_current(void)
+{
+	/* XXX */
+}
 
 static int nr_process = 0;
 
@@ -209,6 +207,7 @@ get_pid(void) {
 // NOTE: before call switch_to, should load  base addr of "proc"'s new PDT
 void
 proc_run(struct proc_struct *proc) {
+	struct proc_struct *current = proc_current();
     if (proc != current) {
         bool intr_flag;
         struct proc_struct *prev = current, *next = proc;
@@ -228,7 +227,7 @@ proc_run(struct proc_struct *proc) {
 //       after switch_to, the current proc will execute here.
 static void
 forkret(void) {
-    forkrets(current->tf);
+    forkrets(proc_current()->tf);
 }
 
 // hash_proc - add proc into proc hash_list
@@ -333,7 +332,7 @@ next_thread(struct proc_struct *proc) {
 //         - if clone_flags & CLONE_VM, then "share" ; else "duplicate"
 static int
 copy_mm(uint32_t clone_flags, struct proc_struct *proc) {
-    struct mm_struct *mm, *oldmm = current->mm;
+    struct mm_struct *mm, *oldmm = proc_current()->mm;
 
     /* current is a kernel thread */
     if (oldmm == NULL) {
@@ -401,7 +400,7 @@ copy_thread(struct proc_struct *proc, uintptr_t rsp, struct trapframe *tf) {
 
 static int
 copy_sem(uint32_t clone_flags, struct proc_struct *proc) {
-    sem_queue_t *sem_queue, *old_sem_queue = current->sem_queue;
+    sem_queue_t *sem_queue, *old_sem_queue = proc_current()->sem_queue;
 
     /* current is kernel thread */
     if (old_sem_queue == NULL) {
@@ -451,7 +450,7 @@ put_sem_queue(struct proc_struct *proc) {
 
 static int
 copy_fs(uint32_t clone_flags, struct proc_struct *proc) {
-    struct fs_struct *fs_struct, *old_fs_struct = current->fs_struct;
+    struct fs_struct *fs_struct, *old_fs_struct = proc_current()->fs_struct;
     assert(old_fs_struct != NULL);
 
     if (clone_flags & CLONE_FS) {
@@ -493,7 +492,7 @@ put_fs(struct proc_struct *proc) {
 void
 may_killed(void) {
     // killed by other process, already set exit_code and call __do_exit directly
-    if (current->flags & PF_EXITING) {
+    if (proc_current()->flags & PF_EXITING) {
         __do_exit();
     }
 }
@@ -517,6 +516,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
         goto fork_out;
     }
 
+	struct proc_struct *current = proc_current();
     proc->parent = current;
     list_init(&(proc->thread_group));
     assert(current->wait_state == 0);
@@ -574,7 +574,8 @@ bad_fork_cleanup_proc:
 //   3. call scheduler to switch to other process
 static int
 __do_exit(void) {
-    if (current == idleproc) {
+	struct proc_struct *current = proc_current();
+    if (PROC_IS_IDLE(current)) {
         panic("idleproc exit.\n");
     }
     if (current == initproc) {
@@ -649,7 +650,7 @@ do_exit(int error_code) {
     bool intr_flag;
     local_intr_save(intr_flag);
     {
-        list_entry_t *list = &(current->thread_group), *le = list;
+        list_entry_t *list = &(proc_current()->thread_group), *le = list;
         while ((le = list_next(le)) != list) {
             struct proc_struct *proc = le2proc(le, thread_group);
             __do_kill(proc, error_code);
@@ -662,7 +663,7 @@ do_exit(int error_code) {
 // do_exit_thread - kill a single thread
 int
 do_exit_thread(int error_code) {
-    current->exit_code = error_code;
+    proc_current()->exit_code = error_code;
     return __do_exit();
 }
 
@@ -681,6 +682,7 @@ load_icode_read(int fd, void *buf, size_t len, off_t offset) {
 static int
 load_icode(int fd, int argc, char **kargv) {
     assert(argc >= 0 && argc <= EXEC_MAX_ARG_NUM);
+	struct proc_struct *current = proc_current();
     if (current->mm != NULL) {
         panic("load_icode: current->mm must be empty.\n");
     }
@@ -876,6 +878,7 @@ failed_cleanup:
 int
 do_execve(const char *name, int argc, const char **argv) {   
     static_assert(EXEC_MAX_ARG_LEN >= FS_MAX_FPATH_LEN);
+	struct proc_struct *current = proc_current();
     struct mm_struct *mm = current->mm;
     if (!(argc >= 1 && argc <= EXEC_MAX_ARG_NUM)) {
         return -E_INVAL;
@@ -954,7 +957,7 @@ execve_exit:
 // do_yield - ask the scheduler to reschedule
 int
 do_yield(void) {
-    current->need_resched = 1;
+    proc_current()->need_resched = 1;
     return 0;
 }
 
@@ -963,7 +966,7 @@ do_yield(void) {
 // NOTE: only after do_wait function, all resources of the child proces are free.
 int
 do_wait(int pid, int *code_store) {
-    struct mm_struct *mm = current->mm;
+    struct mm_struct *mm = proc_current()->mm;
     if (code_store != NULL) {
         if (!user_mem_check(mm, (uintptr_t)code_store, sizeof(int), 1)) {
             return -E_INVAL;
@@ -1386,7 +1389,9 @@ void
 cpu_idle(void) {
     while (1) {
         if (current->need_resched) {
+			KERNEL_ENTER;
             schedule();
+			KERNEL_EXIT;
         }
     }
 }

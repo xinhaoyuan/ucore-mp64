@@ -2,6 +2,9 @@
 #define __GLUE_INTR_H__
 
 #include <libs/types.h>
+#include <libs/x86.h>
+#include <mmu.h>
+
 /* Trap Numbers */
 
 /* Processor-defined: */
@@ -87,5 +90,8 @@ extern void intr_handler_set(int intr_no, intr_handler_f h);
 extern void irq_enable(int irq);
 extern void irq_disable(int irq);
 extern void irq_ack(int irq);
+
+#define local_intr_save(x)      do { x = (read_rflags() & FL_IF) != 0; __asm __volatile ("cli"); } while (0)
+#define local_intr_restore(x)   do { if (x)  __asm __volatile ("sti"); } while (0)
 
 #endif

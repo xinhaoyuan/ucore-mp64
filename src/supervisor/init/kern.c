@@ -11,7 +11,8 @@
 #include <sysconf.h>
 
 kern_bootinfo_s kern_bootinfo;
-char *kern_data;
+char     *kern_data;
+uintptr_t kern_share;
 
 static void
 read_secs(unsigned short ideno, uint32_t secno, void *dst, size_t nsecs)
@@ -38,16 +39,15 @@ load_kern(void)
 		1 + (kern_bootinfo.kern_text - kern_bootinfo.kern_start) / SECTSIZE,
 		kern_data,
 		kern_data_size / SECTSIZE);
+	
+	kern_share = page2pa(alloc_pages((kern_bootinfo.kern_end - kern_bootinfo.kern_data) / PGSIZE));
+		
+	memmove((char *)KADDR(kern_share),
+			kern_data + kern_bootinfo.kern_data - kern_bootinfo.kern_text,
+			kern_bootinfo.kern_bss - kern_bootinfo.kern_data);
+	memset((char *)KADDR(kern_share) + kern_bootinfo.kern_bss - kern_bootinfo.kern_data,
+		   0, kern_bootinfo.kern_end - kern_bootinfo.kern_bss);
 }
-
-static spinlock_s kprintf_lock;
-
-#define KRES_COUNT 1024
-
-static struct {
-	int lcpu;
-	spinlock_s lock;
-} kres[KRES_COUNT];
 
 void
 jump_kern(void)
@@ -63,17 +63,22 @@ jump_kern(void)
 	for (i = kern_bootinfo.kern_text; i < kern_bootinfo.kern_end; i += PGSIZE)
 	{
 		pte_t *pte = get_pte(pgdir, i, 1);
-		if (i < kern_bootinfo.kern_data)
+		if (i < kern_bootinfo.kern_pls)
 		{
-			/* Copy all readonly data */
-			*pte = PADDR(kern_data + i - kern_bootinfo.kern_text) | PTE_W | PTE_P;
+			/* map all readonly data */
+			*pte = PADDR(kern_data + i - kern_bootinfo.kern_text) | PTE_P;
+		}
+		else if (i < kern_bootinfo.kern_data)
+		{
+			/* alloc all pls data */
+			*pte = page2pa(alloc_page()) | PTE_W | PTE_P;
 		}
 		else
 		{
-			/* And alloc all writable data */
-			*pte = page2pa(alloc_page()) | PTE_W | PTE_P;
+			/* Kern share data */
+			*pte = (kern_share + i - kern_bootinfo.kern_data) | PTE_W | PTE_P;
 		}
-	}
+	}		
 
 	lcr3(PADDR(pgdir));
 	/* Setup cr0 protection */
@@ -81,57 +86,26 @@ jump_kern(void)
     cr0 |= CR0_PE | CR0_PG | CR0_AM | CR0_WP | CR0_NE | CR0_TS | CR0_EM | CR0_MP;
     cr0 &= ~(CR0_TS | CR0_EM);
     lcr0(cr0);
-	
-	memmove((void *)kern_bootinfo.kern_data,
-			kern_data + kern_bootinfo.kern_data - kern_bootinfo.kern_text,
-			kern_bootinfo.kern_bss - kern_bootinfo.kern_data);
-	memset((void *)kern_bootinfo.kern_bss,
-		   0, kern_bootinfo.kern_end - kern_bootinfo.kern_bss);
 
-	spinlock_init(&kprintf_lock);
-	for (i = 0; i != KRES_COUNT; ++ i)
-	{
-		kres[i].lcpu = -1;
-		spinlock_init(&kres[i].lock);
-	}
+	memmove((char *)kern_bootinfo.kern_pls,
+			kern_data + kern_bootinfo.kern_pls - kern_bootinfo.kern_text,
+			kern_bootinfo.kern_data - kern_bootinfo.kern_pls);
+
 	((void(*)(void))kern_bootinfo.kern_entry)();
 	
 	while (1) ;
 }
 
-#include <stdarg.h>
-#include <sync.h>
-
-int
-vkprintf(const char *fmt, va_list ap)
-{
-	bool intr_save;
-	
-	local_intr_save(intr_save);
-	spinlock_acquire(&kprintf_lock);
-	int cnt = vcprintf(fmt, ap);
-	spinlock_release(&kprintf_lock);
-	local_intr_restore(intr_save);
-
-	return cnt;
-}
-
 void
 kputchar(int c)
 {
-	bool intr_save;
-	
-	local_intr_save(intr_save);
-	spinlock_acquire(&kprintf_lock);
 	cputchar(c);
-	spinlock_release(&kprintf_lock);
-	local_intr_restore(intr_save);
 }
 
-char *
-kreadline(const char *prompt)
+int
+kcons_getc(void)
 {
-	return readline(prompt);
+	return cons_getc();
 }
 
 void
@@ -201,76 +175,28 @@ tick_init(int freq)
 	lapic_set_timer(freq);
 }
 
-int
-kcons_getc(void)
+unsigned int
+lapic_id_get(void)
 {
-	return cons_getc();
-}
-
-int
-kacquire_try(int id)
-{
-	if (id < 0 || id >= KRES_COUNT) return 0;
-	bool intr_flag;
-	int result = lapic_id();
-	
-	local_intr_save(intr_flag);
-	if (spinlock_acquire_try(&kres[id].lock))
-	{
-		kres[id].lcpu = result;
-	}
-	result = kres[id].lcpu == result;
-	local_intr_restore(intr_flag);
-
-	return result;
-}
-
-void
-kacquire(int id)
-{
-	if (id < 0 || id >= KRES_COUNT) return;
-	bool intr_flag;
-	local_intr_save(intr_flag);
-	if (kres[id].lcpu != lapic_id())
-	{
-		spinlock_acquire(&kres[id].lock);
-		kres[id].lcpu = lapic_id();
-	}
-	local_intr_restore(intr_flag);
-}
-
-void
-krelease(int id)
-{
-	if (id < 0 || id >= KRES_COUNT) return;
-	bool intr_flag;
-	local_intr_save(intr_flag);
-	if (kres[id].lcpu == lapic_id())
-	{
-		kres[id].lcpu = -1;
-		spinlock_release(&kres[id].lock);
-	}
-	local_intr_restore(intr_flag);
+	return lapic_id();
 }
 
 unsigned int
-lcpu_idx(void)
+lcpu_idx_get(void)
 {
 	return lcpu_id_inv[lapic_id()];
 }
 
 unsigned int
-lcpu_count(void)
+lcpu_count_get(void)
 {
 	return sysconf.lcpu_count;
 }
 
 EXPORT_SYMBOL(context_fill);
 EXPORT_SYMBOL(context_switch);
-EXPORT_SYMBOL(vkprintf);
 EXPORT_SYMBOL(kputchar);
-EXPORT_SYMBOL(lapic_id);
-EXPORT_SYMBOL(kreadline);
+EXPORT_SYMBOL(kcons_getc);
 EXPORT_SYMBOL(intr_handler_set);
 EXPORT_SYMBOL(irq_enable);
 EXPORT_SYMBOL(irq_disable);
@@ -282,9 +208,6 @@ EXPORT_SYMBOL(kalloc_pages);
 EXPORT_SYMBOL(kfree_pages);
 EXPORT_SYMBOL(load_rsp0);
 EXPORT_SYMBOL(tick_init);
-EXPORT_SYMBOL(kcons_getc);
-EXPORT_SYMBOL(kacquire);
-EXPORT_SYMBOL(kacquire_try);
-EXPORT_SYMBOL(krelease);
-EXPORT_SYMBOL(lcpu_idx);
-EXPORT_SYMBOL(lcpu_count);
+EXPORT_SYMBOL(lapic_id_get);
+EXPORT_SYMBOL(lcpu_idx_get);
+EXPORT_SYMBOL(lcpu_count_get);

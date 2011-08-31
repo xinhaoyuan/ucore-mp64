@@ -17,6 +17,12 @@ enum proc_state {
     PROC_ZOMBIE,      // almost dead, and wait parent proc to reclaim his resource
 };
 
+#define PROC_ATTR_ROLE 3
+#define PROC_ATTR_ROLE_NORMAL 0
+#define PROC_ATTR_ROLE_IDLE   1
+
+#define PROC_IS_IDLE(proc)   ((proc)->attribute & PROC_ATTR_ROLE == PROC_ATTR_ROLE_IDLE)
+
 struct context {
     uint64_t rip;
     uint64_t rsp;
@@ -48,6 +54,7 @@ struct fs_struct;
 
 struct proc_struct {
     enum proc_state state;                      // Process state
+	uint32_t attribute;                         // Special attributes
     int pid;                                    // Process ID
     int runs;                                   // the running times of Proces
     uintptr_t kstack;                           // Process kernel stack
@@ -92,8 +99,10 @@ struct proc_struct {
 #define le2proc(le, member)         \
     to_struct((le), struct proc_struct, member)
 
-extern struct proc_struct *idleproc, *initproc, *current;
+extern struct proc_struct *initproc;
 extern struct proc_struct *kswapd;
+
+struct proc_struct *proc_current();
 
 void proc_init(void);
 void proc_run(struct proc_struct *proc);

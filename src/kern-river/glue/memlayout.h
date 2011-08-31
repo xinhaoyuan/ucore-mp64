@@ -1,6 +1,8 @@
 #ifndef __GLUE_MEMLAYOUT_H__
 #define __GLUE_MEMLAYOUT_H__
 
+#include <mmu.h>
+
 /* global segment number */
 #define SEG_KTEXT   1
 #define SEG_KDATA   2
@@ -57,7 +59,7 @@
 
 #ifndef __ASSEMBLER__
 
-#include <types.h>
+#include <libs/types.h>
 
 typedef uintptr_t pgd_t;
 typedef uintptr_t pud_t;

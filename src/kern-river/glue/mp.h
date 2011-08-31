@@ -1,12 +1,14 @@
 #ifndef __GLUE_MP_H__
 #define __GLUE_MP_H__
 
-#define lapic_id   (*lapic_id_ptr)
-#define lcpu_idx   (*lcpu_idx_ptr)
-#define lcpu_count (*lcpu_count_ptr)
+#define lapic_id_get   (*lapic_id_get_ptr)
+#define lcpu_idx_get   (*lcpu_idx_get_ptr)
+#define lcpu_count_get (*lcpu_count_get_ptr)
 
-extern unsigned int lapic_id(void);
-extern unsigned int lcpu_idx(void);
-extern unsigned int lcpu_count(void);
+extern unsigned int lapic_id_get(void);
+extern unsigned int lcpu_idx_get(void);
+extern unsigned int lcpu_count_get(void);
+
+#define PLS __attribute__((section(".pls")))
 
 #endif
