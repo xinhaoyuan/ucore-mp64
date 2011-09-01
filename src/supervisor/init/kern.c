@@ -221,4 +221,5 @@ EXPORT_SYMBOL(tick_init);
 EXPORT_SYMBOL(lapic_id_get);
 EXPORT_SYMBOL(lcpu_idx_get);
 EXPORT_SYMBOL(lcpu_count_get);
+EXPORT_SYMBOL(lapic_ipi_issue);
 EXPORT_SYMBOL(hpet_phys_get);

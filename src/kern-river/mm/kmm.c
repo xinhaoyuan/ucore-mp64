@@ -119,7 +119,7 @@ kfree(void *ptr)
 void
 kmm_pgfault(struct trapframe *tf)
 {
-	uint64_t  err  = tf->tf_err;
+	// uint64_t  err  = tf->tf_err;
 	uintptr_t addr = rcr2();
 
 	if (addr >= PBASE && addr < PBASE + PSIZE)

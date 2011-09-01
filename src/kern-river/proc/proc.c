@@ -10,11 +10,6 @@
 #define EVENT_POOL_TO_PROC(sch)											\
 	((proc_t)((char *)(sch) - (uintptr_t)(&((proc_t)0)->event_pool)))
 
-#define PROC_STATUS_UNINIT          0
-#define PROC_STATUS_RUNNABLE        1
-#define PROC_STATUS_WAIT            2
-#define PROC_STATUS_ZOMBIE          3
-
 #define PROC_TIME_SLICE_DEFAULT 50
 
 PLS volatile proc_t proc_current;
@@ -32,7 +27,8 @@ void
 proc_schedule(void)
 {
 	local_irq_save();
-	if (proc_current->time_slice == 0)
+	if (proc_current->time_slice == 0 ||
+		proc_current->status != PROC_STATUS_RUNNABLE)
 	{
 		if (proc_current->type != PROC_TYPE_IDLE &&
 			proc_current->status == PROC_STATUS_RUNNABLE)

@@ -34,6 +34,11 @@ typedef struct proc_s
 #define PROC_TYPE_UTHREAD 0x2
 #define PROC_TYPE_IDLE    0x3
 
+#define PROC_STATUS_UNINIT          0
+#define PROC_STATUS_RUNNABLE        1
+#define PROC_STATUS_WAIT            2
+#define PROC_STATUS_ZOMBIE          3
+
 extern volatile proc_t proc_current;
 
 int  proc_init(void);

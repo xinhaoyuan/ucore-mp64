@@ -72,6 +72,7 @@ trap_in_kernel(struct trapframe *tf) {
 
 #include <kio.h>
 #include <mp/mp.h>
+#include <debug/io.h>
 
 void
 trap_dispatch(struct trapframe *tf)
@@ -105,6 +106,21 @@ trap_dispatch(struct trapframe *tf)
 			-- proc_current->irq_save_level;
 		}
 	}
+	else
+	{
+		switch (tf->tf_trapno)
+		{
+		case T_SYSCALL:
+
+			break;
+
+		case T_IPI:
+
+			kprintf("LCPU %d IPI\n", lapic_id);
+			
+			break;
+		}
+	}
 }
 
 int
@@ -115,6 +131,9 @@ trap_init(void)
 	{
 		intr_handler_set(i, trap_dispatch);
 	}
+
+	intr_handler_set(T_SYSCALL, trap_dispatch);
+	intr_handler_set(T_IPI, trap_dispatch);
 
 	irq_mask = 0;
 	for (i = 0; i != IRQ_COUNT; ++ i)

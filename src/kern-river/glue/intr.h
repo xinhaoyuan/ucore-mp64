@@ -6,6 +6,8 @@
 #include <mmu.h>
 
 /* Trap Numbers */
+#define T_SYSCALL 0x80
+#define T_IPI     0x81
 
 /* Processor-defined: */
 #define T_DIVIDE                0   // divide error

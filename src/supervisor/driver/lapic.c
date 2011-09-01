@@ -236,29 +236,14 @@ lapic_set_timer(uint32_t freq)
 
 /* XXX */
 int
-send_ipi(int lcpu, int func, int arg0, int arg1, int arg2, int arg3)
+lapic_ipi_issue(int lapic_id)
 {
-#if 0
-	if (lapic[ICRLO] & DELIVS)
-		return -E_BUSY;
-	int cur = cur_lcpu();
-	if (cur == lcpu || lcpus[lcpu].valid == 0)
-		return -E_UNSUPPORTED;
-	spl_acquire(&lcpus[lcpu].ipi_recv_lock);
-	spl_acquire(&lcpus[lcpu].ipi_send_lock);
-	lcpus[lcpu].ipi_source = cur;
-	lcpus[lcpu].ipi_arg0 = arg0;
-	lcpus[lcpu].ipi_arg1 = arg1;
-	lcpus[lcpu].ipi_arg2 = arg2;
-	lcpus[lcpu].ipi_arg3 = arg3;
-	lcpus[lcpu].ipi_func = func;
+	if (lapicr(ICRLO) & DELIVS)
+		return -1;
 
-	lapic[ICRHI] = lcpu << 24;
-	lapic[ICRLO] = ASSERT | INT_IPI;
+	lapicw(ICRHI, lapic_id << 24);
+	lapicw(ICRLO, ASSERT | T_IPI);
 
-	while (lcpus[lcpu].ipi_send_lock != 0) ;
-	/* Is this necessary? */
-	// while (lapic[ICRLO] & DELIVS) ;
-#endif
+	while (lapicr(ICRLO) & DELIVS) ;
 	return 0;
 }
