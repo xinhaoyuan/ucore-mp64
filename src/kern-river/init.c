@@ -14,7 +14,7 @@ PLS event_t init_event = &__init_event;
 static void
 do_init(event_t e)
 {
-	kprintf("LCPU %d INITIALIZED\n");
+	kprintf("LCPU %d INITIALIZED\n", lcpu_idx);
 }
 
 void

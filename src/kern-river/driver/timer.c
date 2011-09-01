@@ -12,8 +12,6 @@
 #include <init.h>
 
 PLS crh_s crh;
-PLS static volatile crh_node_t crh_queue;
-PLS static volatile crh_node_t crh_queue_p;
 
 PLS volatile uint64_t timer_tick;
 PLS volatile uint64_t timer_freq;
@@ -157,7 +155,6 @@ tick_handler(int irq_no, uint64_t tick)
 int
 timer_init(void)
 {
-	crh_queue = crh_queue_p = NULL;
 	crh_init(&crh);
 	crh_set_base(&crh, 0);
 	timer_tick = 0;
