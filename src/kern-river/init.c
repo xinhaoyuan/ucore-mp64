@@ -17,16 +17,30 @@ PLS static proc_s  init_proc;
 PLS event_t init_event = &__init_event;
 PLS int init_finished = 0;
 
-PLS static event_s __ping_event;
+static ipe_packet_s ping_packet;
+
+static void
+ping_packet_handler(ipe_packet_t packet)
+{
+	kprintf("CPU %d: PING!\n", lapic_id);
+}
+
+static void
+ping_packet_back_event(event_t event)
+{
+	kprintf("CPU %d: PONG!\n", lapic_id);
+}
 
 static void
 do_init(event_t e)
 {
 	ipe_init();
 
-	if (lapic_id == 3)
-		ipe_activate(0, (uintptr_t)&__ping_event);
-		
+	if (lapic_id == 2)
+	{
+		ipe_packet_send(1, &ping_packet);
+	}
+	
 	init_finished = 1;
 }
 
@@ -35,12 +49,6 @@ init_idle(void)
 {
 	proc_current->status = PROC_STATUS_WAIT;
 	proc_schedule();
-}
-
-static void
-do_ping(event_t e)
-{
-	kprintf("CPU %d: PING!\n", lapic_id);
 }
 
 void
@@ -54,7 +62,11 @@ __kern_entry(void)
 	init_proc.status = PROC_STATUS_WAIT;
 	event_open(init_event, &init_proc.event_pool, do_init, NULL);
 
-	event_open(&__ping_event, &proc_current->event_pool, do_ping, NULL);
+	if (lapic_id == 2)
+	{
+		event_open(&ping_packet.back_event, &proc_current->event_pool, ping_packet_back_event, NULL);
+		ipe_packet_init(&ping_packet, ping_packet_handler, NULL);
+	}
 	
 	kmm_init();
 	trap_init();

@@ -12,14 +12,13 @@
 
 #define RBUF_PAGES 16
 #define RBUF_SIZE  (RBUF_PAGES << PGSHIFT)
-#define RBUF_COUNT (RBUF_SIZE / sizeof(uintptr_t))
+#define RBUF_COUNT (RBUF_SIZE / sizeof(ipe_packet_t))
 
 #define IPE_RETRY 10
 #define IPE_REFRESH_INV 1
 
-PLS static volatile char __local_recv_buffer[RBUF_SIZE] __attribute__((aligned(PGSIZE))) = {0};
-PLS static volatile uintptr_t *local_recv_buffer = (uintptr_t *)__local_recv_buffer;
-static volatile uintptr_t *remote_recv_buffer[LAPIC_COUNT];
+PLS static volatile ipe_packet_t *local_recv_buffer;
+static volatile ipe_packet_t *remote_recv_buffer[LAPIC_COUNT];
 
 PLS static proc_s ipe_proc;
 PLS static event_s __ipe_event;
@@ -34,6 +33,12 @@ ipe_idle(void)
 }
 
 static void
+ipe_packet_handle(ipe_packet_t packet)
+{
+	packet->handler(packet);
+}
+
+static void
 do_ipe(event_t e)
 {
 	int i;
@@ -41,13 +46,27 @@ do_ipe(event_t e)
 	{
 		if (local_recv_buffer[i])
 		{
-			uintptr_t handle = local_recv_buffer[i];
-			local_recv_buffer[i] = 0;
-			
-			if (handle != 0)
+			ipe_packet_t packet = local_recv_buffer[i];
+			if (packet->from_lapic == lapic_id)
 			{
-				event_activate((event_t)handle);
+				event_activate(&packet->back_event);
 			}
+			else
+			{
+				if (packet->processed == 0)
+				{
+					packet->processed = 1;
+					ipe_packet_handle(packet);
+				}
+
+				if (ipe_packet_send(packet->from_lapic, packet))
+				{
+					/* SEND ACK FAILED */
+					continue;
+				}
+			}
+			
+			local_recv_buffer[i] = NULL;
 		}
 	}
 
@@ -57,12 +76,18 @@ do_ipe(event_t e)
 	}
 }
 
+#include <libs/x86/spinlock.h>
+
 volatile static int ipe_ready = 0;
+spinlock_s ipe_init_alloc_lock = {0};
 
 int
 ipe_init(void)
 {
-	remote_recv_buffer[lapic_id] = (uintptr_t *)KADDR_DIRECT(PTE_ADDR(*VPT_ENTRY(local_recv_buffer)));
+	spinlock_acquire(&ipe_init_alloc_lock);
+	local_recv_buffer = remote_recv_buffer[lapic_id] =
+		(ipe_packet_t *)KADDR_DIRECT(kalloc_pages(RBUF_PAGES));
+	spinlock_release(&ipe_init_alloc_lock);
 	
 	proc_open(&ipe_proc, "ipe", ipe_idle, NULL, (uintptr_t)KADDR_DIRECT(kalloc_pages(4)) + 4 * PGSIZE);
 	ipe_proc.status = PROC_STATUS_WAIT;
@@ -82,20 +107,31 @@ ipe_init(void)
 	return 0;
 }
 
+void
+ipe_packet_init(ipe_packet_t packet, ipe_packet_handler_f handler, void *private)
+{
+	packet->from_lapic = lapic_id;
+	packet->handler = handler;
+	packet->private = private;
+}
+
 int
-ipe_activate(int target_lapic_id, uintptr_t event_handle)
+ipe_packet_send(int target_lapic_id, ipe_packet_t packet)
 {
 	if (lapic_id == target_lapic_id)
 	{
-		event_activate((event_t)event_handle);
-		return 0;		
+		ipe_packet_handle(packet);
+		event_activate(&packet->back_event);
+		return 0;
 	}
+
+	packet->processed = 0;
 	
 	int retry;
 	for (retry = 0; retry < IPE_RETRY; ++ retry)
 	{
 		int idx = rand16() & (RBUF_COUNT - 1);
-		if (cmpxchg64(remote_recv_buffer[target_lapic_id] + idx, 0, event_handle) == 0) break;
+		if (cmpxchg64(remote_recv_buffer[target_lapic_id] + idx, 0, (uintptr_t)packet) == 0) break;
 	}
 
 	if (retry == IPE_RETRY)
