@@ -4,6 +4,9 @@
 #include <mm/kmm.h>
 #include <trap/trap.h>
 #include <libs/string.h>
+#include <proc/ipe.h>
+#include <proc/event.h>
+#include <init.h>
 
 #define SCHED_NODE_TO_PROC(sch)											\
 	((proc_t)((char *)(sch) - (uintptr_t)(&((proc_t)0)->sched_node)))
@@ -117,11 +120,14 @@ proc_open(proc_t proc, const char *name, proc_idle_f idle, void *private, uintpt
 	return 0;
 }
 
-#include <kio.h>
-
 static void
 idle_idle(void)
 {
+	if (init_finished)
+	{
+		event_activate(ipe_event);
+	}
+	
 	proc_current->time_slice = 0;
 	proc_schedule();
 }

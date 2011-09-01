@@ -7,6 +7,7 @@ PLS event_pool_s global_pool;
 
 #define EVENT_STATUS_WAIT  0
 #define EVENT_STATUS_QUEUE 1
+#define EVENT_STATUS_QUEUE_STRONG 2
 
 void
 event_pool_init(event_pool_t pool,
@@ -42,7 +43,9 @@ event_activate(event_t event)
 {
 	local_irq_save();
 
-	if (event->status == EVENT_STATUS_WAIT)
+	switch (event->status)
+	{
+	case EVENT_STATUS_WAIT:
 	{
 		event->status = EVENT_STATUS_QUEUE;
 		event->next   = NULL;
@@ -57,6 +60,13 @@ event_activate(event_t event)
 			pool->tail->next = event;
 			pool->tail = event;
 		}
+
+		break;
+	}
+	
+	case EVENT_STATUS_QUEUE:
+		event->status = EVENT_STATUS_QUEUE_STRONG;
+		break;
 	}
 	
 	local_irq_restore();
@@ -85,11 +95,33 @@ event_loop(event_pool_t pool)
 		else
 		{
 			event = pool->head;
-			event->status = EVENT_STATUS_WAIT;
-			if ((pool->head = pool->head->next) == NULL)
+			switch (event->status)
 			{
-				pool->tail = NULL;
+			case EVENT_STATUS_QUEUE:
+				
+				event->status = EVENT_STATUS_WAIT;
+				if ((pool->head = pool->head->next) == NULL)
+				{
+					pool->tail = NULL;
+				}
+
+				break;
+
+			case EVENT_STATUS_QUEUE_STRONG:
+
+				event->status = EVENT_STATUS_QUEUE;
+				if (pool->tail != event)
+				{
+					pool->head = pool->head->next;
+					pool->tail->next = event;
+					pool->tail = event;
+					
+					event->next = NULL;
+				}
+
+				break;
 			}
+				
 		}
 		local_irq_restore();
 

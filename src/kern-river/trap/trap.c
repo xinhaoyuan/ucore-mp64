@@ -6,6 +6,9 @@
 #include <proc/proc.h>
 #include <mm/kmm.h>
 #include <memlayout.h>
+#include <mp/mp.h>
+#include <debug/io.h>
+#include <proc/ipe.h>
 
 #define IRQ_COUNT 32
 
@@ -70,10 +73,6 @@ trap_in_kernel(struct trapframe *tf) {
     return (tf->tf_cs == (uint16_t)KERNEL_CS);
 }
 
-#include <kio.h>
-#include <mp/mp.h>
-#include <debug/io.h>
-
 void
 trap_dispatch(struct trapframe *tf)
 {
@@ -115,9 +114,7 @@ trap_dispatch(struct trapframe *tf)
 			break;
 
 		case T_IPI:
-
-			kprintf("LCPU %d IPI\n", lapic_id);
-			
+			event_activate(ipe_event);
 			break;
 		}
 	}

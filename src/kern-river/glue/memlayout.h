@@ -37,6 +37,7 @@
  * the page mappings for the entire virtual address space into that region starting at VPT.
  * */
 #define VPT                 0xFFFF9F8000000000
+#define VPT_ENTRY(ADDR)     ((pte_t *)(VPT + (((uintptr_t)(ADDR) & 0xFFFFFFFFF000) >> 9)))
 
 #define KSTACKPAGE          4                           // # of pages in kernel stack
 #define KSTACKSIZE          (KSTACKPAGE * PGSIZE)       // sizeof kernel stack

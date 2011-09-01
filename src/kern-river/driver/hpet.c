@@ -2,6 +2,8 @@
 #include <mp/mp.h>
 #include <pmm.h>
 #include <clock.h>
+#include <debug/io.h>
+#include <libs/x86.h>
 
 volatile uint64_t *hpet_regs;
 
@@ -40,12 +42,11 @@ hpet_enable_timer(int t)
 	hpet_regs[HRT_CONF(t)] = id;
 }
 
-int hpet_ready;
+static volatile int hpet_ready = 0;
 
 int
 hpet_init(void)
 {
-	hpet_ready = 0;
 	if (lcpu_idx == 0)
 	{
 		hpet_regs = (volatile uint64_t *)KADDR_DIRECT(hpet_phys_get());
@@ -74,7 +75,7 @@ hpet_init(void)
 	else
 	{
 		/* naive sync */
-		while (hpet_ready == 0) ;
+		while (hpet_ready == 0) barrier();
 	}
 	return 0;
 }

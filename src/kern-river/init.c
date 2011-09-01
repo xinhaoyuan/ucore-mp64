@@ -8,18 +8,26 @@
 #include <intr.h>
 #include <debug/io.h>
 #include <pmm.h>
+#include <proc/ipe.h>
+#include <driver/rand.h>
 
-PLS event_s __init_event;
+PLS static event_s __init_event;
+PLS static proc_s  init_proc;
+
 PLS event_t init_event = &__init_event;
-PLS proc_s  init_proc;
+PLS int init_finished = 0;
+
+PLS static event_s __ping_event;
 
 static void
 do_init(event_t e)
 {
-	if (lapic_id == 1)
-		lapic_ipi_issue(2);
-	
-	kprintf("LCPU %d INITIALIZED\n", lcpu_idx);
+	ipe_init();
+
+	if (lapic_id == 3)
+		ipe_activate(0, (uintptr_t)&__ping_event);
+		
+	init_finished = 1;
 }
 
 static void
@@ -27,6 +35,12 @@ init_idle(void)
 {
 	proc_current->status = PROC_STATUS_WAIT;
 	proc_schedule();
+}
+
+static void
+do_ping(event_t e)
+{
+	kprintf("CPU %d: PING!\n", lapic_id);
 }
 
 void
@@ -39,6 +53,8 @@ __kern_entry(void)
 	proc_open(&init_proc, "init", init_idle, NULL, (uintptr_t)KADDR_DIRECT(kalloc_pages(4)) + 4 * PGSIZE);
 	init_proc.status = PROC_STATUS_WAIT;
 	event_open(init_event, &init_proc.event_pool, do_init, NULL);
+
+	event_open(&__ping_event, &proc_current->event_pool, do_ping, NULL);
 	
 	kmm_init();
 	trap_init();
@@ -46,6 +62,8 @@ __kern_entry(void)
 	hpet_init();
 	timer_init();
 
+	rand_init();
+	
 	local_intr_enable_hw;
 	timer_measure();
 	

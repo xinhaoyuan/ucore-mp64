@@ -6,10 +6,10 @@
 static __inline uint64_t
 xchg64(volatile void *addr, uint64_t newval)
 {
-     uint32_t result;
+     uint64_t result;
   
      // The + in "+m" denotes a read-modify-write operand.
-     asm volatile("lock; xchgl %0, %1" :
+     asm volatile("lock; xchgq %0, %1" :
 				  "+m" (*(volatile uint64_t *)addr), "=a" (result) :
 				  "1" (newval) :
 				  "cc");
@@ -60,7 +60,7 @@ cmpxchg64(volatile void *addr, uint64_t oldval, uint64_t newval)
 {
      uint64_t result;
 	 // The + in "+m" denotes a read-modify-write operand.
-     asm volatile("cmpxchgl %3, %1" :
+     asm volatile("cmpxchgq %3, %1" :
 				  "=a"(result), "+m" (*(volatile uint64_t *)addr) :
 				  "a" (oldval), "r" (newval) :
 				  "cc");
