@@ -2,6 +2,8 @@
 #include <proc/proc.h>
 #include <mp/mp.h>
 #include <mm/kmm.h>
+#include <trap/trap.h>
+#include <libs/string.h>
 
 #define SCHED_NODE_TO_PROC(sch)											\
 	((proc_t)((char *)(sch) - (uintptr_t)(&((proc_t)0)->sched_node)))
@@ -15,8 +17,8 @@
 
 #define PROC_TIME_SLICE_DEFAULT 50
 
-PLS proc_t proc_current;
-PLS proc_s proc_idle;
+PLS volatile proc_t proc_current;
+PLS static proc_s proc_idle;
 
 static void
 proc_switch(proc_t proc)
@@ -86,19 +88,13 @@ proc_ep_exhaust(event_pool_t pool)
 static void
 proc_ep_stop(event_pool_t pool)
 {
-	proc_t proc = EVENT_POOL_TO_PROC(pool);
+	// proc_t proc = EVENT_POOL_TO_PROC(pool);
 	/* XXX */
 }
 
-proc_t
-proc_create(const char *name, proc_idle_f idle, void *private, uintptr_t stack)
+int
+proc_open(proc_t proc, const char *name, proc_idle_f idle, void *private, uintptr_t stack)
 {
-	proc_t proc;
-	if ((proc = (proc_t)kalloc(sizeof(proc_s))) == NULL)
-	{
-		return NULL;
-	}
-
 	if (name != NULL)
 	{
 		strncpy(proc->name, name, MAX_PROC_NAME);
@@ -122,7 +118,7 @@ proc_create(const char *name, proc_idle_f idle, void *private, uintptr_t stack)
 	proc->time_slice = PROC_TIME_SLICE_DEFAULT;
 	proc->status     = PROC_STATUS_UNINIT;
 
-	return proc;
+	return 0;
 }
 
 #include <kio.h>
@@ -138,7 +134,7 @@ int
 proc_init(void)
 {
 	int err;
-	if (err = sched_init()) return err;
+	if ((err = sched_init())) return err;
 
 	/* XXX */
 	event_pool_init(NULL, NULL, NULL, NULL);

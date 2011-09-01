@@ -61,6 +61,8 @@ memmap_append(uintptr_t start, uintptr_t end, int flag)
 	mmnode_addr[mmnode_count] =  end;
 	mmnode_flag[mmnode_count] = -flag;
 	++ mmnode_count;
+
+	return 0;
 }
 
 void

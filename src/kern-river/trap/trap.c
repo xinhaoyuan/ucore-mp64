@@ -4,6 +4,8 @@
 #include <mp.h>
 #include <intr.h>
 #include <proc/proc.h>
+#include <mm/kmm.h>
+#include <memlayout.h>
 
 #define IRQ_COUNT 32
 
@@ -63,13 +65,29 @@ local_irq_restore(void)
 	local_intr_restore_hw(flag);
 }
 
+static int
+trap_in_kernel(struct trapframe *tf) {
+    return (tf->tf_cs == (uint16_t)KERNEL_CS);
+}
+
+#include <kio.h>
+#include <mp/mp.h>
+
 void
 trap_dispatch(struct trapframe *tf)
 {
 	if (tf->tf_trapno < IRQ_COUNT)
 	{
 		/* EXCEPTION */
-		
+		switch (tf->tf_trapno)
+		{
+		case T_PGFLT:
+			if (trap_in_kernel(tf))
+			{
+				kmm_pgfault(tf);
+			}
+			break;
+		}
 	}
 	else if (tf->tf_trapno < IRQ_OFFSET + IRQ_COUNT)
 	{
@@ -80,7 +98,7 @@ trap_dispatch(struct trapframe *tf)
 		if (proc_current->irq_save_level == 0)
 		{
 			++ proc_current->irq_save_level;
-			
+
 			irq_process();
 			proc_schedule();
 			
@@ -104,6 +122,8 @@ trap_init(void)
 		irq_accumulate[i] = 0;
 		irq_handler[i] = NULL;
 	}
+
+	return 0;
 }
 
 void

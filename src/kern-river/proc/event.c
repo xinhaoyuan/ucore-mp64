@@ -1,6 +1,7 @@
 #include <proc/event.h>
 #include <mp.h>
 #include <intr.h>
+#include <trap/trap.h>
 
 PLS event_pool_s global_pool;
 
@@ -25,7 +26,7 @@ event_pool_init(event_pool_t pool,
 }
 
 void
-event_init(event_t event, event_pool_t pool, event_handler_f handler, void *private)
+event_open(event_t event, event_pool_t pool, event_handler_f handler, void *private)
 {
 	if (pool == NULL)
 		pool = &global_pool;
@@ -41,7 +42,7 @@ event_activate(event_t event)
 {
 	local_irq_save();
 
-	if (event->status = EVENT_STATUS_WAIT)
+	if (event->status == EVENT_STATUS_WAIT)
 	{
 		event->status = EVENT_STATUS_QUEUE;
 		event->next   = NULL;

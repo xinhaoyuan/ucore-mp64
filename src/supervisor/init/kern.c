@@ -9,6 +9,8 @@
 #include <spinlock.h>
 #include <stdio.h>
 #include <sysconf.h>
+#include <string.h>
+#include <console.h>
 
 kern_bootinfo_s kern_bootinfo;
 char     *kern_data;
@@ -193,6 +195,14 @@ lcpu_count_get(void)
 	return sysconf.lcpu_count;
 }
 
+uintptr_t
+hpet_phys_get(void)
+{
+	if (sysconf.has_hpet)
+		return sysconf.hpet_phys;
+	else return 0;
+}
+
 EXPORT_SYMBOL(context_fill);
 EXPORT_SYMBOL(context_switch);
 EXPORT_SYMBOL(kcons_putc);
@@ -211,3 +221,4 @@ EXPORT_SYMBOL(tick_init);
 EXPORT_SYMBOL(lapic_id_get);
 EXPORT_SYMBOL(lcpu_idx_get);
 EXPORT_SYMBOL(lcpu_count_get);
+EXPORT_SYMBOL(hpet_phys_get);

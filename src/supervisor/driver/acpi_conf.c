@@ -6,6 +6,8 @@
 #include <lapic.h>
 #include <ioapic.h>
 #include <lcpu.h>
+#include <string.h>
+#include <stdio.h>
 
 struct acpi_rsdp_s
 {
@@ -108,7 +110,7 @@ acpi_rsdp_search_segment(uint8_t *addr, int len, uint64_t align, int ex)
 	{
 		if(memcmp((char *)p, "RSD PTR ", 8) == 0)
 		{
-			if (sum((char *)p, ex ? 36 : 20) == 0)
+			if (sum((unsigned char *)p, ex ? 36 : 20) == 0)
 			{
 				result = (struct acpi_rsdp_s*)p;
 				return result;
@@ -221,11 +223,9 @@ acpi_conf_init(void)
 		}
 		else if (memcmp(cur->signature, "HPET", 4) == 0)
 		{
-#if 0
 			struct acpi_hpet_desc_s *hpet = (struct acpi_hpet_desc_s *)(cur + 1);
 			sysconf.has_hpet = 1;
-			sysconf.hpet_phys = hpet->base_low_addr.addr_32;
-#endif
+			sysconf.hpet_phys = hpet->base_low_addr.addr_64;
 		}
 	}
 

@@ -125,7 +125,9 @@ trap_dispatch(struct trapframe *tf) {
 		if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER)
 		{
 			if (h != NULL)
+			{
 				h(tf);
+			}
 		}
 		else
 		{

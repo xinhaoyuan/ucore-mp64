@@ -3,6 +3,7 @@
 #include <pmm.h>
 #include <trap.h>
 #include <x86.h>
+#include <stdio.h>
 
 /* I/O APIC Code from xv6 */
 

@@ -14,6 +14,7 @@ typedef struct sysconf_s
 	int use_ioapic_eoi;
 	
 	int has_hpet;
+	uintptr_t hpet_phys;
 } sysconf_s;
 
 extern sysconf_s sysconf;

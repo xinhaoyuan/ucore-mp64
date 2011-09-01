@@ -2,6 +2,7 @@
 #include <trap.h>
 #include <stdio.h>
 #include <picirq.h>
+#include <lapic.h>
 
 /* *
  * Support for time-related hardware gadgets - the 8253 timer,

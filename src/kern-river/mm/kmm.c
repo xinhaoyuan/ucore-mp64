@@ -4,6 +4,7 @@
 #include <libs/x86.h>
 #include <libs/x86/bitsearch.h>
 #include <libs/string.h>
+#include <trap/trap.h>
 
 #include <mm/kmm.h>
 
@@ -25,6 +26,12 @@ typedef struct kmm_ctrl_s
 
 PLS static kmm_ctrl_s ctrl[ALLOC_DELTA_SHIFT + 1];
 
+PLS static pgd_t *last_pgd;
+PLS static uintptr_t last_addr;
+PLS static pud_t *temp_pud;
+PLS static pmd_t *temp_pmd;
+PLS static pte_t *temp_ptd;
+
 int
 kmm_init(void)
 {
@@ -36,6 +43,12 @@ kmm_init(void)
 		ctrl[i].block_psize = MIN_BLOCK_PAGE;
 	}
 
+	last_pgd = NULL;
+	last_addr = 0;
+	temp_pud = KADDR_DIRECT(kalloc_pages(1));
+	temp_pmd = KADDR_DIRECT(kalloc_pages(1));
+	temp_ptd = KADDR_DIRECT(kalloc_pages(1));
+	
 	return 0;
 }
 
@@ -98,4 +111,65 @@ kfree(void *ptr)
 	ctrl->head = (uintptr_t)head;
 	
 	local_irq_restore();
+}
+
+#include <libs/x86.h>
+#include <mp/mp.h>
+
+void
+kmm_pgfault(struct trapframe *tf)
+{
+	uint64_t  err  = tf->tf_err;
+	uintptr_t addr = rcr2();
+
+	if (addr >= PBASE && addr < PBASE + PSIZE)
+	{
+		pgd_t *pgd = KADDR_DIRECT(PTE_ADDR(rcr3()));
+		pud_t *pud;
+		pmd_t *pmd;
+		pte_t *ptd;
+		
+		/* PHYSICAL ADDRRESS ACCESSING */
+		if (last_pgd != NULL)
+		{
+			pud = KADDR_DIRECT(PGD_ADDR(last_pgd[PGX(last_addr)]));
+			pmd = KADDR_DIRECT(PUD_ADDR(pud[PUX(last_addr)]));
+			ptd = KADDR_DIRECT(PMD_ADDR(pmd[PMX(last_addr)]));
+
+			ptd[PTX(last_addr)] = 0;
+			if (ptd == temp_ptd)
+			{
+				pmd[PUX(last_addr)] = 0;
+				if (pmd == temp_pmd)
+				{
+					pud[PUX(last_addr)] = 0;
+					if (pud == temp_pud)
+						last_pgd[PGX(last_addr)] = 0;
+				}
+				
+				if (last_pgd == pgd)
+				{
+					invlpg((void *)last_addr);
+				}
+			}
+		}
+
+		if (pgd[PGX(last_addr)] == 0)
+			pgd[PGX(last_addr)] = PADDR_DIRECT(temp_pud) | PTE_W | PTE_P;
+		pud = KADDR_DIRECT(PGD_ADDR(pgd[PGX(last_addr)]));
+		if (pud[PUX(last_addr)] == 0)
+			pud[PUX(last_addr)] = PADDR_DIRECT(temp_pmd) | PTE_W | PTE_P;
+		pmd = KADDR_DIRECT(PUD_ADDR(pud[PUX(last_addr)]));
+		if (pmd[PMX(last_addr)] == 0)
+			pmd[PMX(last_addr)] = PADDR_DIRECT(temp_ptd) | PTE_W | PTE_P;
+		ptd = KADDR_DIRECT(PMD_ADDR(pmd[PMX(last_addr)]));
+
+		ptd[PTX(last_addr)] = PADDR_DIRECT(addr) | PTE_W | PTE_P;
+
+		last_pgd = pgd;
+		last_addr = addr;
+
+		/* XXX? */
+		// invlpg((void *)addr);
+	}
 }

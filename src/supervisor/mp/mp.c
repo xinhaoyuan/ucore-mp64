@@ -5,6 +5,7 @@
 #include <lcpu.h>
 #include <x86.h>
 #include <trap.h>
+#include <lapic.h>
 
 /* Provided by link script */
 extern char boot_ap_entry_64[];
@@ -40,7 +41,7 @@ mp_init(void)
 		apic_id = lcpu_id_set[i];
 		if (apic_id != sysconf.lcpu_boot)
 		{
-			lapic_startap(apic_id, BOOT_AP_ENTRY);
+			lapic_start_ap(apic_id, BOOT_AP_ENTRY);
 		}
 	 }
 

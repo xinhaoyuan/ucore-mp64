@@ -15,6 +15,10 @@
 #include <x86.h>
 #include <lcpu.h>
 #include <cpuid.h>
+#include <context.h>
+#include <ide.h>
+#include <kern.h>
+#include <mp.h>
 
 void kern_init(void) __attribute__((noreturn));
 

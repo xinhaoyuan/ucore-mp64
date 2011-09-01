@@ -178,7 +178,7 @@ microdelay(int us)
 // Start additional processor running bootstrap code at addr.
 // See Appendix B of MultiProcessor Specification.
 void
-lapic_startap(int apicid, uint32_t addr)
+lapic_start_ap(int apicid, uint32_t addr)
 {
 	int i;
 	uint16_t *wrv;
@@ -260,4 +260,5 @@ send_ipi(int lcpu, int func, int arg0, int arg1, int arg2, int arg3)
 	/* Is this necessary? */
 	// while (lapic[ICRLO] & DELIVS) ;
 #endif
+	return 0;
 }

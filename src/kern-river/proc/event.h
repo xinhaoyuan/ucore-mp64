@@ -35,7 +35,7 @@ void event_pool_init(event_pool_t pool,
 					 event_pool_handler_f remote_touch,
 					 event_pool_handler_f local_exhaust,
 					 event_pool_handler_f local_stop);
-void event_init(event_t event, event_pool_t pool, event_handler_f handler, void *private);
+void event_open(event_t event, event_pool_t pool, event_handler_f handler, void *private);
 int  event_activate(event_t event);
 void event_loop(event_pool_t pool);
 void event_loop_stop(event_pool_t pool);

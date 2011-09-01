@@ -1,4 +1,5 @@
 #include <boot_alloc.h>
+#include <memmap.h>
 #include <stdio.h>
 #include <pmm.h>
 

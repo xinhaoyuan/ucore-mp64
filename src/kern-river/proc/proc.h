@@ -34,12 +34,12 @@ typedef struct proc_s
 #define PROC_TYPE_UTHREAD 0x2
 #define PROC_TYPE_IDLE    0x3
 
-extern proc_t proc_current;
+extern volatile proc_t proc_current;
 
-int    proc_init(void);
-proc_t proc_create(const char *name, proc_idle_f idle, void *private, uintptr_t stack);
-void   proc_schedule(void);
-int    proc_destroy(proc_t entry);
-int    proc_exit(void);
+int  proc_init(void);
+int  proc_open(proc_t proc, const char *name, proc_idle_f idle, void *private, uintptr_t stack);
+void proc_schedule(void);
+int  proc_close(proc_t proc);
+int  proc_exit(void);
 
 #endif

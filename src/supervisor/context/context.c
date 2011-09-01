@@ -1,10 +1,12 @@
 #include <context.h>
 #include <lapic.h>
+#include <stdio.h>
 
 extern void __context_switch(uintptr_t *from_esp, uintptr_t *from_pc, uintptr_t to_esp, uintptr_t to_pc);
 extern void __context_init(void);
 extern void __context_deadend(void);
 
+#if 0
 context_s ca, cb;
 
 static void
@@ -20,7 +22,7 @@ eb(void *arg)
 	cprintf("EB %p\n", arg);
 	context_switch(&cb, &ca);
 }
-
+#endif
 int
 context_init(void)
 {

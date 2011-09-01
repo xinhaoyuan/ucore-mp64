@@ -467,7 +467,8 @@ check_alloc_page(void) {
     cprintf("check_alloc_page() succeeded!\n");
 }
 
-static void
+/* disabled because of ... of what @_@ */
+__attribute__((unused)) static void
 check_boot_pgdir(void) {
     pte_t *ptep;
     int i;
