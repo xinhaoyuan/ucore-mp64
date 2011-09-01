@@ -78,7 +78,6 @@ trap_dispatch(struct trapframe *tf)
 {
 	if (tf->tf_trapno < IRQ_COUNT)
 	{
-		kprintf("cpu %d pgfault!\n", lapic_id);
 		/* EXCEPTION */
 		switch (tf->tf_trapno)
 		{
