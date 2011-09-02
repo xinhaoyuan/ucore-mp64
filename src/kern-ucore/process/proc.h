@@ -106,6 +106,8 @@ extern struct proc_struct *initproc;
 extern struct proc_struct *kswapd;
 
 void proc_init(void);
+void proc_init_ap(void);
+
 void proc_run(struct proc_struct *proc);
 int kernel_thread(int (*fn)(void *), void *arg, uint32_t clone_flags);
 

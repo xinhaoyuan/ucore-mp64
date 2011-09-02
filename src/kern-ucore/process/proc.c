@@ -20,6 +20,8 @@
 #include <swap.h>
 #include <mbox.h>
 #include <kio.h>
+#include <stdio.h>
+#include <mp.h>
 
 /* ------------- process/thread mechanism design&implementation -------------
 (an simplified Linux process/thread mechanism )
@@ -1355,12 +1357,16 @@ proc_init(void) {
 	// XXX
     // idleproc->kstack = (uintptr_t)bootstack;
     idleproc->need_resched = 1;
+	idleproc->tf = NULL;
     if ((idleproc->fs_struct = fs_create()) == NULL) {
         panic("create fs_struct (idleproc) failed.\n");
     }
     fs_count_inc(idleproc->fs_struct);
 
-    set_proc_name(idleproc, "idle");
+	char namebuf[32];
+	snprintf(namebuf, 32, "idle/%d", lapic_id);
+	
+    set_proc_name(idleproc, namebuf);
     nr_process ++;
 
     current = idleproc;
@@ -1377,12 +1383,41 @@ proc_init(void) {
     assert(initproc != NULL && initproc->pid == 1);
 }
 
+void
+proc_init_ap(void)
+{
+	if ((idleproc = alloc_proc()) == NULL) {
+        panic("cannot alloc idleproc.\n");
+    }
+
+    idleproc->pid = 0;
+    idleproc->state = PROC_RUNNABLE;
+	// XXX
+    // idleproc->kstack = (uintptr_t)bootstack;
+    idleproc->need_resched = 1;
+	idleproc->tf = NULL;
+    if ((idleproc->fs_struct = fs_create()) == NULL) {
+        panic("create fs_struct (idleproc) failed.\n");
+    }
+    fs_count_inc(idleproc->fs_struct);
+
+	char namebuf[32];
+	snprintf(namebuf, 32, "idle/%d", lapic_id);
+	
+    set_proc_name(idleproc, namebuf);
+    nr_process ++;
+
+	current = idleproc;
+}
+
 // cpu_idle - at the end of kern_init, the first kernel thread idleproc will do below works
 void
 cpu_idle(void) {
     while (1) {
         if (current->need_resched) {
+			kern_enter();
             schedule();
+			kern_leave();
         }
     }
 }

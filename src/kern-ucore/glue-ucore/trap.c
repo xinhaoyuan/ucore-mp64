@@ -18,6 +18,7 @@
 #include <clock.h>
 #include <intr.h>
 #include <glue_kio.h>
+#include <mp.h>
 
 #define TICK_NUM 30
 
@@ -209,6 +210,9 @@ trap(struct trapframe *tf) {
         current->tf = tf;
 
         bool in_kernel = trap_in_kernel(tf);
+		int  local_locking;
+		if (!in_kernel || current == idleproc)
+			local_locking = kern_enter();
 		
         trap_dispatch(tf);
 
@@ -219,6 +223,9 @@ trap(struct trapframe *tf) {
                 schedule();
             }
         }
+
+		if (!in_kernel || (current == idleproc && !local_locking))
+			kern_leave();
     }
 }
 
@@ -228,9 +235,19 @@ trap_init(void)
 	int i;
 	for (i = 0; i < 32; ++ i)
 		intr_handler_set(i, trap);
+	intr_handler_set(T_SYSCALL, trap);
+
 	intr_handler_set(IRQ_OFFSET + IRQ_TIMER, trap);
 	intr_handler_set(IRQ_OFFSET + IRQ_COM1, trap);
 	intr_handler_set(IRQ_OFFSET + IRQ_KBD, trap);
 	irq_enable(IRQ_KBD);
+}
+
+void
+trap_init_ap(void)
+{
+	int i;
+	for (i = 0; i < 32; ++ i)
+		intr_handler_set(i, trap);
 	intr_handler_set(T_SYSCALL, trap);
 }

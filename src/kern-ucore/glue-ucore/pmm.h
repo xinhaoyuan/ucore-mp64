@@ -106,6 +106,6 @@ int copy_range(pgd_t *to, pgd_t *from, uintptr_t start, uintptr_t end, bool shar
 
 void print_pgdir(void);
 
-void pmm_init(void);
+void pmm_init_ap(void);
 
 #endif

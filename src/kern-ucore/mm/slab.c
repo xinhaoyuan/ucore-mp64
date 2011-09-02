@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <rb_tree.h>
 #include <kio.h>
+#include <mp.h>
 
 /* The slab allocator used in ucore is based on an algorithm first introduced by 
    Jeff Bonwick for the SunOS operating system. The paper can be download from 

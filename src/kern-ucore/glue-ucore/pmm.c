@@ -84,7 +84,7 @@ nr_used_pages(void)
 }
 
 void
-pmm_init(void)
+pmm_init_ap(void)
 {
 	list_init(&page_struct_free_list);
 	used_pages = 0;
