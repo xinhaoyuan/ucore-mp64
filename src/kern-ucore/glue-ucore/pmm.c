@@ -6,18 +6,18 @@
 #include <string.h>
 #include <kio.h>
 #include <swap.h>
+#include <glue_mp.h>
 
-static size_t
-used_pages;
-
-list_entry_t page_struct_free_list;
+PLS static size_t used_pages;
+PLS list_entry_t page_struct_free_list;
 
 static struct Page *
 page_struct_alloc(uintptr_t pa)
 {
 	if (list_empty(&page_struct_free_list))
 	{
-		struct Page *p = KADDR(kalloc_pages(1));
+		struct Page *p = KADDR_DIRECT(kalloc_pages(1));
+		
 		int i;
 		for (i = 0; i < PGSIZE / sizeof(struct Page); ++ i)
 			list_add(&page_struct_free_list, &p[i].page_link);
@@ -25,13 +25,14 @@ page_struct_alloc(uintptr_t pa)
 
 	list_entry_t *entry = list_next(&page_struct_free_list);
 	list_del(entry);
-	
+
 	struct Page *page = le2page(entry, page_link);
+
 	page->pa = pa;
 	atomic_set(&page->ref, 0);
 	page->flags = 0;
 	list_init(entry);
-
+	
 	return page;
 }
 
@@ -50,7 +51,7 @@ alloc_pages(size_t npages)
 
 	result = page_struct_alloc(base);
 	kpage_private_set(base, result);
-	
+
 	for (i = 1; i < npages; ++ i)
 	{
 		struct Page *page = page_struct_alloc(base + i * PGSIZE);

@@ -204,7 +204,6 @@ get_pid(void) {
 // NOTE: before call switch_to, should load  base addr of "proc"'s new PDT
 void
 proc_run(struct proc_struct *proc) {
-	struct proc_struct *current = current;
     if (proc != current) {
         bool intr_flag;
         struct proc_struct *prev = current, *next = proc;
@@ -513,7 +512,6 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
         goto fork_out;
     }
 
-	struct proc_struct *current = current;
     proc->parent = current;
     list_init(&(proc->thread_group));
     assert(current->wait_state == 0);
@@ -571,7 +569,6 @@ bad_fork_cleanup_proc:
 //   3. call scheduler to switch to other process
 static int
 __do_exit(void) {
-	struct proc_struct *current = current;
     if (PROC_IS_IDLE(current)) {
         panic("idleproc exit.\n");
     }
@@ -679,7 +676,6 @@ load_icode_read(int fd, void *buf, size_t len, off_t offset) {
 static int
 load_icode(int fd, int argc, char **kargv) {
     assert(argc >= 0 && argc <= EXEC_MAX_ARG_NUM);
-	struct proc_struct *current = current;
     if (current->mm != NULL) {
         panic("load_icode: current->mm must be empty.\n");
     }
@@ -875,7 +871,6 @@ failed_cleanup:
 int
 do_execve(const char *name, int argc, const char **argv) {   
     static_assert(EXEC_MAX_ARG_LEN >= FS_MAX_FPATH_LEN);
-	struct proc_struct *current = current;
     struct mm_struct *mm = current->mm;
     if (!(argc >= 1 && argc <= EXEC_MAX_ARG_NUM)) {
         return -E_INVAL;
@@ -1294,7 +1289,8 @@ init_main(void *arg) {
     set_proc_name(kswapd, "kswapd");
 
     int ret;
-    if ((ret = vfs_set_bootfs("disk0:")) != 0) {
+	char root[] = "disk0:";
+    if ((ret = vfs_set_bootfs(root)) != 0) {
         panic("set boot fs failed: %e.\n", ret);
     }
 

@@ -41,13 +41,13 @@ Now, ucore didn't implementation 'Special Case&Operation for User Semaphore' in 
 
 
 #define VALID_SEMID(sem_id)                     \
-    ((uintptr_t)(sem_id) < (uintptr_t)(sem_id) + KERNBASE)
+    ((uintptr_t)(sem_id) < (uintptr_t)(sem_id) + PBASE)
 
 #define semid2sem(sem_id)                       \
-    ((semaphore_t *)((uintptr_t)(sem_id) + KERNBASE))
+    ((semaphore_t *)((uintptr_t)(sem_id) + PBASE))
 
 #define sem2semid(sem)                          \
-    ((sem_t)((uintptr_t)(sem) - KERNBASE))
+    ((sem_t)((uintptr_t)(sem) - PBASE))
 
 void
 sem_init(semaphore_t *sem, int value) {

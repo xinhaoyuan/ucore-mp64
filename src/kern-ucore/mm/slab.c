@@ -264,6 +264,7 @@ static slab_t *
 kmem_cache_slabmgmt(kmem_cache_t *cachep, struct Page *page) {
     void *objp = page2kva(page);
     slab_t *slabp;
+
     if (cachep->off_slab) {
         if ((slabp = kmem_cache_alloc(cachep->slab_cachep)) == NULL) {
             return NULL;

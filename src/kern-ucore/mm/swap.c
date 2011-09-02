@@ -196,7 +196,6 @@ try_free_pages(size_t n) {
     if (!swap_init_ok || kswapd == NULL) {
         return 0;
     }
-	struct proc_struct *current = current;
 	if (current == kswapd) {
         panic("kswapd call try_free_pages!!.\n");
     }
@@ -1137,7 +1136,7 @@ check_mm_swap(void) {
     }
 
     exit_mmap(mm0);
-    for (i = 0; i < PGX(KERNBASE); i ++) {
+    for (i = 0; i < PGX(PBASE); i ++) {
         assert(pgdir[i] == 0);
     }
 

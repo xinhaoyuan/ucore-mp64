@@ -14,16 +14,17 @@
 void
 __kern_entry(void)
 {
-	if (lapic_id_get() == 3)
+	if (lapic_id_get() == 0)
 	{
 		pmm_init();
 		slab_init();
-		
+				
 		trap_init();
 		vmm_init();                 // init virtual memory management
 
 		sched_init();               // init scheduler
 		proc_init();                // init process table
+
 		sync_init();                // init sync struct
 
 		ide_init();

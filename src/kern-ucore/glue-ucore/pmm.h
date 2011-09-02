@@ -9,8 +9,8 @@
 #include <atomic.h>
 
 /* Simply translate between VA and PA without checking */
-#define KADDR(addr) ((void*)((uintptr_t)(addr) + KERNBASE))
-#define PADDR(addr) ((uintptr_t)(addr) - KERNBASE)
+#define KADDR(addr) ((void*)((uintptr_t)(addr) + PBASE))
+#define PADDR(addr) ((uintptr_t)(addr) - PBASE)
 
 #define NEXT_PAGE(pg) (pa2page(page2pa(pg) + PGSIZE))
 

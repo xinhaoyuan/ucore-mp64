@@ -38,6 +38,7 @@ get_device(char *path, char **subpath, struct inode **node_store) {
 
         /* device:/path - skip slash, treat as device:path */
         while (path[++ colon] == '/');
+
         *subpath = path + colon;
         return vfs_get_root(path, node_store);
     }
