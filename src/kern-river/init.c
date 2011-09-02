@@ -4,10 +4,10 @@
 #include <driver/hpet.h>
 #include <trap/trap.h>
 #include <mm/kmm.h>
-#include <kio.h>
-#include <intr.h>
+#include <glue_kio.h>
+#include <glue_intr.h>
 #include <debug/io.h>
-#include <pmm.h>
+#include <glue_pmm.h>
 #include <proc/ipe.h>
 #include <driver/rand.h>
 

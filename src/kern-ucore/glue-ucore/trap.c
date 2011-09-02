@@ -17,6 +17,7 @@
 #include <kio.h>
 #include <clock.h>
 #include <intr.h>
+#include <glue_kio.h>
 
 #define TICK_NUM 30
 
@@ -208,8 +209,6 @@ trap(struct trapframe *tf) {
         current->tf = tf;
 
         bool in_kernel = trap_in_kernel(tf);
-		if (!in_kernel)
-			KERNEL_ENTER;
 		
         trap_dispatch(tf);
 
@@ -219,7 +218,6 @@ trap(struct trapframe *tf) {
             if (current->need_resched) {
                 schedule();
             }
-			KERNEL_EXIT;
         }
     }
 }

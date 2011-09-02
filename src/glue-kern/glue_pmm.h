@@ -1,8 +1,13 @@
 #ifndef __GLUE_PMM_H__
 #define __GLUE_PMM_H__
 
+#ifdef LIBSPREFIX
 #include <libs/types.h>
-#include <memlayout.h>
+#else
+#include <types.h>
+#endif
+
+#include "glue_memlayout.h"
 
 #define kalloc_pages      (*kalloc_pages_ptr)
 #define kfree_pages       (*kfree_pages_ptr)

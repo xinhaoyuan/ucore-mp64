@@ -1,9 +1,19 @@
-#ifndef __GLUE_TRAP_H__
-#define __GLUE_TRAP_H__
+#ifndef __GLUE_INTR_H__
+#define __GLUE_INTR_H__
 
+#ifdef LIBSPREFIX
+#include <libs/types.h>
+#include <libs/x86.h>
+#else
 #include <types.h>
+#include <x86.h>
+#endif
+
+#include "glue_mmu.h"
 
 /* Trap Numbers */
+#define T_SYSCALL 0x80
+#define T_IPI     0x81
 
 /* Processor-defined: */
 #define T_DIVIDE                0   // divide error
@@ -75,10 +85,24 @@ struct trapframe {
     uint16_t tf_padding3[3];
 } __attribute__((packed));
 
-void trap_init(void);
-void print_trapframe(struct trapframe *tf);
-void print_regs(struct pushregs *regs);
-bool trap_in_kernel(struct trapframe *tf);
+/* It is assumed that supervisor shared same structure of trapframe
+ * with kernel */
+typedef void(*intr_handler_f)(struct trapframe *tf);
+
+#define intr_handler_set (*intr_handler_set_ptr)
+#define irq_enable       (*irq_enable_ptr)
+#define irq_disable      (*irq_disable_ptr)
+#define irq_ack          (*irq_ack_ptr)
+
+extern void intr_handler_set(int intr_no, intr_handler_f h);
+extern void irq_enable(int irq);
+extern void irq_disable(int irq);
+extern void irq_ack(int irq);
+
+#define local_intr_enable_hw  do { __asm __volatile ("sti"); } while (0)
+#define local_intr_disable_hw do { __asm __volatile ("cli"); } while (0)
+
+#define local_intr_save_hw(x)      do { x = (read_rflags() & FL_IF) != 0; __asm __volatile ("cli"); } while (0)
+#define local_intr_restore_hw(x)   do { if (x)  __asm __volatile ("sti"); } while (0)
 
 #endif
-

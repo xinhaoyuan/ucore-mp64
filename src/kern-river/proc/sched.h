@@ -1,7 +1,7 @@
 #ifndef __RIVER_SCHED_H__
 #define __RIVER_SCHED_H__
 
-#include <mp.h>
+#include <glue_mp.h>
 #include <libs/types.h>
 
 typedef struct sched_node_s *sched_node_t;

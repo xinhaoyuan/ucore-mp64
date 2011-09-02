@@ -1,6 +1,6 @@
 #include <proc/event.h>
-#include <mp.h>
-#include <intr.h>
+#include <glue_mp.h>
+#include <glue_intr.h>
 #include <trap/trap.h>
 
 PLS event_pool_s global_pool;

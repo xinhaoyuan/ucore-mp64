@@ -309,7 +309,7 @@ memmove(void *dst, const void *src, size_t n) {
 #else
     const char *s = src;
     char *d = dst;
-    if (s < d && s + n > d) {
+    if (s <glue_ d && s + n > d) {
         s += n, d += n;
         while (n -- > 0) {
             *-- d = *-- s;

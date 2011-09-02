@@ -1,7 +1,7 @@
 #include <driver/hpet.h>
 #include <mp/mp.h>
-#include <pmm.h>
-#include <clock.h>
+#include <glue_pmm.h>
+#include <glue_tick.h>
 #include <debug/io.h>
 #include <libs/x86.h>
 

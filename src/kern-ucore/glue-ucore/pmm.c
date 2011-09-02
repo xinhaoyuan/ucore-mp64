@@ -3,6 +3,9 @@
 #include <error.h>
 #include <assert.h>
 #include <x86.h>
+#include <string.h>
+#include <kio.h>
+#include <swap.h>
 
 static size_t
 used_pages;

@@ -2,7 +2,7 @@
 #define __RIVER_KMM_H__
 
 #include <libs/types.h>
-#include <intr.h>
+#include <glue_intr.h>
 
 int   kmm_init(void);
 void *kalloc(size_t size);

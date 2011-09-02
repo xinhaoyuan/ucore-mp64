@@ -50,8 +50,8 @@ void
 lock_mm(struct mm_struct *mm) {
     if (mm != NULL) {
         down(&(mm->mm_sem));
-        if (proc_current() != NULL) {
-            mm->locked_by = proc_current()->pid;
+        if (current != NULL) {
+            mm->locked_by = current->pid;
         }
     }
 }
@@ -70,8 +70,8 @@ try_lock_mm(struct mm_struct *mm) {
         if (!try_down(&(mm->mm_sem))) {
             return 0;
         }
-        if (proc_current() != NULL) {
-            mm->locked_by = proc_current()->pid;
+        if (current != NULL) {
+            mm->locked_by = current->pid;
         }
     }
     return 1;
@@ -700,14 +700,14 @@ check_pgfault(void) {
 int
 do_pgfault(struct mm_struct *mm, uint64_t error_code, uintptr_t addr) {
     if (mm == NULL) {
-        assert(proc_current() != NULL);
+        assert(current != NULL);
         panic("page fault in kernel thread: pid = %d, %d %08x.\n",
-			  proc_current()->pid, error_code, addr);
+			  current->pid, error_code, addr);
     }
 
     bool need_unlock = 1;
     if (!try_lock_mm(mm)) {
-        if (proc_current() != NULL && mm->locked_by == proc_current()->pid) {
+        if (current != NULL && mm->locked_by == current->pid) {
             need_unlock = 0;
         }
         else {

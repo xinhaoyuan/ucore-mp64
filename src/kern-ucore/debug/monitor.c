@@ -89,7 +89,7 @@ monitor(struct trapframe *tf) {
 
     char *buf;
     while (1) {
-        if ((buf = kreadline("K> ")) != NULL) {
+        if ((buf = readline("K> ")) != NULL) {
             if (runcmd(buf, tf) < 0) {
                 break;
             }

@@ -1,12 +1,20 @@
-#include <kio.h>
-#include <mp.h>
-#include <intr.h>
+#include <glue_mp.h>
+#include <slab.h>
 #include <vmm.h>
+#include <pmm.h>
+#include <slab.h>
+#include <trap.h>
+#include <sched.h>
+#include <proc.h>
+#include <swap.h>
+#include <fs.h>
+#include <clock.h>
+#include <intr.h>
 
 void
 __kern_entry(void)
 {
-	if (lapic_id() == 3)
+	if (lapic_id_get() == 3)
 	{
 		pmm_init();
 		slab_init();

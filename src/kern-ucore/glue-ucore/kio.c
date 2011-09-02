@@ -1,15 +1,15 @@
-#include <debug/io.h>
-#include <libs/x86/spinlock.h>
-#include <libs/printfmt.h>
-#include <glue_intr.h>
+#include <kio.h>
 #include <glue_kio.h>
+#include <glue_intr.h>
+#include <stdio.h>
+#include <x86/spinlock.h>
 
 /* *
  * cputch - writes a single character @c to stdout, and it will
  * increace the value of counter pointed by @cnt.
  * */
 static void
-cputch(int c, int *cnt) {
+cputch(int c, int *cnt, int fd) {
     kcons_putc(c);
     (*cnt) ++;
 }
@@ -31,7 +31,7 @@ vkprintf(const char *fmt, va_list ap) {
 	int flag;
 	local_intr_save_hw(flag);
 	spinlock_acquire(&kprintf_lock);
-    vprintfmt((void*)cputch, &cnt, fmt, ap);
+    vprintfmt((void*)cputch, 0, &cnt, fmt, ap);
 	spinlock_release(&kprintf_lock);
 	local_intr_restore_hw(flag);
     return cnt;

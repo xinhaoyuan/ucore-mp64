@@ -2,8 +2,8 @@
 #define __RIVER_PROC_H__
 
 #include <libs/types.h>
-#include <context.h>
-#include <mp.h>
+#include <glue_context.h>
+#include <glue_mp.h>
 
 #include <proc/sched.h>
 #include <proc/event.h>

@@ -1,11 +1,11 @@
 #include <driver/timer.h>
-#include <intr.h>
+#include <glue_intr.h>
 #include <trap/trap.h>
 #include <proc/proc.h>
-#include <clock.h>
+#include <glue_tick.h>
 #include <libs/crh.h>
 #include <proc/event.h>
-#include <pmm.h>
+#include <glue_pmm.h>
 #include <debug/io.h>
 #include <mp/mp.h>
 #include <driver/hpet.h>

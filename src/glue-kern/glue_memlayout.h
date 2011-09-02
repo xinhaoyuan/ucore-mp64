@@ -1,7 +1,7 @@
 #ifndef __GLUE_MEMLAYOUT_H__
 #define __GLUE_MEMLAYOUT_H__
 
-#include <mmu.h>
+#include "glue_mmu.h"
 
 /* global segment number */
 #define SEG_KTEXT   1

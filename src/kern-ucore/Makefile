@@ -1,7 +1,7 @@
 .PHONY: all
 
-SRCFILES   := $(shell find . '(' '!' -regex '.*/_.*' ')' -and '(' -iname "*.c" -or -iname "*.S" ')' | sed -e 's!\./!!g')
-T_CC_FLAGS := 	-Iglue -Iglue/libs -Ilibs -Idebug -Idriver -Imm -Isync -Ischedule -Iprocess -Ifs \
+SRCFILES   := $(shell find . '(' '!' -regex '.*/_.*' ')' -and '(' -iname "*.c" -or -iname "*.S" ')' | sed -e 's!\./!!g') ../glue-kern/bootinfo.S
+T_CC_FLAGS := 	-I../glue-kern -Iglue-ucore -Iglue-ucore/libs -Ilibs -Idebug -Idriver -Imm -Isync -Ischedule -Iprocess -Ifs \
 				-Ifs/swap -Ifs/vfs -Ifs/pipe -Ifs/sfs -Ifs/devs -Isyscall
 
 include ${T_BASE}/mk/compk.mk
@@ -14,9 +14,9 @@ ${T_OBJ}/kern-bin: ${T_OBJ}/kern
 	${V}${OBJCOPY} -S -O binary $^ $@
 	@T_OBJ=${T_OBJ} sh ${T_BASE}/misc/kerninfo.sh
 
-${T_OBJ}/kern: ${OBJFILES} ${T_OBJ}/kern-svsym.S.o kern.ld
+${T_OBJ}/kern: ${OBJFILES} ${T_OBJ}/kern-svsym.S.o ../glue-kern/kern.ld
 	@echo LD $@
-	${V}${LD} -T kern.ld -z max-page-size=0x1000 -o$@ $^
+	${V}${LD} -T ../glue-kern/kern.ld -z max-page-size=0x1000 -o$@ $^
 
 ${T_OBJ}/svsym.o: ${T_OBJ}/supervisor
 	${V}objcopy --extract-symbol $< $@

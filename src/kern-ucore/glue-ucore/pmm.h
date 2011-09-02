@@ -1,25 +1,12 @@
-#ifndef __GLUE_PMM_H__
-#define __GLUE_PMM_H__
+#ifndef __GLUE_UCORE_PMM_H__
+#define __GLUE_UCORE_PMM_H__
 
-#include <mmu.h>
+#include <glue_pmm.h>
+#include <glue_mmu.h>
 #include <memlayout.h>
 #include <types.h>
 #include <assert.h>
-#include <kio.h>
-
-#define kalloc_pages (*kalloc_pages_ptr)
-#define kfree_pages (*kfree_pages_ptr)
-#define kpage_private_set (*kpage_private_set_ptr)
-#define kpage_private_get (*kpage_private_get_ptr)
-#define load_rsp0 (*load_rsp0_ptr)
-#define init_pgdir_get (*init_pgdir_get_ptr)
-
-extern uintptr_t kalloc_pages(size_t npages);
-extern void      kfree_pages(uintptr_t basepa, size_t npages);
-extern void      kpage_private_set(uintptr_t pa, void *private);
-extern void     *kpage_private_get(uintptr_t pa);
-extern void      load_rsp0(uintptr_t rsp0);
-extern pgd_t    *init_pgdir_get(void);
+#include <atomic.h>
 
 /* Simply translate between VA and PA without checking */
 #define KADDR(addr) ((void*)((uintptr_t)(addr) + KERNBASE))
@@ -103,7 +90,7 @@ pte_t *get_pte(pgd_t *pgdir, uintptr_t la, bool create);
 #define alloc_page() alloc_pages(1)
 #define free_page(page) free_pages(page, 1)
 
-struct Page *        alloc_pages(size_t npages);
+struct Page *alloc_pages(size_t npages);
 void         free_pages(struct Page *base, size_t npages);
 size_t       nr_used_pages(void);
 

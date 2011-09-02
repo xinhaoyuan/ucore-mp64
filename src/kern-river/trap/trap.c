@@ -1,11 +1,11 @@
 #include <trap/trap.h>
 #include <libs/types.h>
 #include <libs/x86/bitsearch.h>
-#include <mp.h>
-#include <intr.h>
+#include <glue_mp.h>
+#include <glue_intr.h>
 #include <proc/proc.h>
 #include <mm/kmm.h>
-#include <memlayout.h>
+#include <glue_memlayout.h>
 #include <mp/mp.h>
 #include <debug/io.h>
 #include <proc/ipe.h>

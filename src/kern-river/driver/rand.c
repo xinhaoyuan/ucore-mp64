@@ -1,7 +1,7 @@
 #include <driver/rand.h>
 #include <driver/hpet.h>
-#include <intr.h>
-#include <mp.h>
+#include <glue_intr.h>
+#include <glue_mp.h>
 
 PLS static uint32_t seed;
 

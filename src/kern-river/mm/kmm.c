@@ -1,6 +1,6 @@
-#include <mp.h>
-#include <pmm.h>
-#include <intr.h>
+#include <glue_mp.h>
+#include <glue_pmm.h>
+#include <glue_intr.h>
 #include <libs/x86.h>
 #include <libs/x86/bitsearch.h>
 #include <libs/string.h>

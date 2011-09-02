@@ -196,7 +196,7 @@ try_free_pages(size_t n) {
     if (!swap_init_ok || kswapd == NULL) {
         return 0;
     }
-	struct proc_struct *current = proc_current();
+	struct proc_struct *current = current;
 	if (current == kswapd) {
         panic("kswapd call try_free_pages!!.\n");
     }

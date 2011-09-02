@@ -1,7 +1,11 @@
-#ifndef __GLUE_CLOCK_H__
-#define __GLUE_CLOCK_H__
+#ifndef __GLUE_TICK_H__
+#define __GLUE_TICK_H__
 
+#ifdef LIBSPREFIX
 #include <libs/types.h>
+#else
+#include <types.h>
+#endif
 
 #define tick_init     (*tick_init_ptr)
 #define hpet_phys_get (*hpet_phys_get_ptr)

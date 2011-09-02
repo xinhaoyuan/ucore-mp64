@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sem.h>
 #include <event.h>
+#include <glue_mp.h>
 
 // process's state in his life cycle
 enum proc_state {
@@ -99,10 +100,10 @@ struct proc_struct {
 #define le2proc(le, member)         \
     to_struct((le), struct proc_struct, member)
 
+extern struct proc_struct *current;
+extern struct proc_struct *idleproc;
 extern struct proc_struct *initproc;
 extern struct proc_struct *kswapd;
-
-struct proc_struct *proc_current();
 
 void proc_init(void);
 void proc_run(struct proc_struct *proc);

@@ -1,10 +1,10 @@
 #include <proc/ipe.h>
-#include <memlayout.h>
+#include <glue_memlayout.h>
 #include <libs/types.h>
-#include <mp.h>
+#include <glue_mp.h>
 #include <mp/mp.h>
 #include <debug/io.h>
-#include <pmm.h>
+#include <glue_pmm.h>
 #include <libs/x86/atom.h>
 #include <driver/rand.h>
 #include <driver/timer.h>

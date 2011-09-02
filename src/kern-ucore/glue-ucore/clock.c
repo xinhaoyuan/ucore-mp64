@@ -1,4 +1,5 @@
 #include <clock.h>
+#include <glue_tick.h>
 
 volatile size_t ticks;
 

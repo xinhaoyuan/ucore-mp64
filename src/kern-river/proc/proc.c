@@ -1,4 +1,4 @@
-#include <intr.h>
+#include <glue_intr.h>
 #include <proc/proc.h>
 #include <mp/mp.h>
 #include <mm/kmm.h>
