@@ -39,6 +39,12 @@ ipe_packet_handle(ipe_packet_t packet)
 }
 
 static void
+ipe_packet_back_handle(ipe_packet_t packet)
+{
+	packet->back_handler(packet);
+}
+
+static void
 do_ipe(event_t e)
 {
 	int i;
@@ -49,7 +55,7 @@ do_ipe(event_t e)
 			ipe_packet_t packet = local_recv_buffer[i];
 			if (packet->from_lapic == lapic_id)
 			{
-				event_activate(&packet->back_event);
+				ipe_packet_back_handle(packet);
 			}
 			else
 			{
@@ -95,7 +101,7 @@ ipe_init(void)
 	event_open(&ipe_timer.event, &ipe_proc.event_pool, do_ipe, NULL);
 	timer_open(&ipe_timer, timer_tick + IPE_REFRESH_INV * timer_freq);
 
-	/* XXX: use naive CAS here =_= for atom inc */
+	/* XXX: use naive CAS here =_= for atomic inc */
 	while (1)
 	{
 		int old = ipe_ready;
@@ -108,11 +114,12 @@ ipe_init(void)
 }
 
 void
-ipe_packet_init(ipe_packet_t packet, ipe_packet_handler_f handler, void *private)
+ipe_packet_init(ipe_packet_t packet, ipe_packet_handler_f handler, ipe_packet_handler_f back_handler, void *private)
 {
-	packet->from_lapic = lapic_id;
-	packet->handler = handler;
-	packet->private = private;
+	packet->from_lapic   = lapic_id;
+	packet->handler      = handler;
+	packet->back_handler = back_handler;
+	packet->private      = private;
 }
 
 int
@@ -121,7 +128,7 @@ ipe_packet_send(int target_lapic_id, ipe_packet_t packet)
 	if (lapic_id == target_lapic_id)
 	{
 		ipe_packet_handle(packet);
-		event_activate(&packet->back_event);
+		ipe_packet_back_handle(packet);
 		return 0;
 	}
 

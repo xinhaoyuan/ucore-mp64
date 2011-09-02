@@ -251,7 +251,7 @@ __memcpy(void *dst, const void *src, size_t n) {
         "rep; movsb;"
         "1:"
         : "=&c" (d0), "=&D" (d1), "=&S" (d2)
-        : "0" (n / 4), "g" (n), "1" (dst), "2" (src)
+        : "0" (n / 4), "m" (n), "1" (dst), "2" (src)
         : "memory");
     return dst;
 }

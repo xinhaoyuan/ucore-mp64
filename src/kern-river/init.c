@@ -26,7 +26,7 @@ ping_packet_handler(ipe_packet_t packet)
 }
 
 static void
-ping_packet_back_event(event_t event)
+ping_packet_back_handler(ipe_packet_t packet)
 {
 	kprintf("CPU %d: PONG!\n", lapic_id);
 }
@@ -64,8 +64,7 @@ __kern_entry(void)
 
 	if (lapic_id == 2)
 	{
-		event_open(&ping_packet.back_event, &proc_current->event_pool, ping_packet_back_event, NULL);
-		ipe_packet_init(&ping_packet, ping_packet_handler, NULL);
+		ipe_packet_init(&ping_packet, ping_packet_handler, ping_packet_back_handler, NULL);
 	}
 	
 	kmm_init();

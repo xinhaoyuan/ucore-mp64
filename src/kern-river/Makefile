@@ -2,6 +2,7 @@
 
 SRCFILES   := $(shell find . '(' '!' -regex '.*/_.*' ')' -and '(' -iname "*.c" -or -iname "*.S" ')' | sed -e 's!\./!!g')
 T_CC_FLAGS :=	-Iglue -I.
+# T_CC_OPT_FLAGS := -O2
 
 include ${T_BASE}/mk/compk.mk
 include ${T_BASE}/mk/template.mk
