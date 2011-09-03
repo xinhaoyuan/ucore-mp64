@@ -55,7 +55,7 @@
     (USERBASE <= (start) && (start) < (end) && (end) <= USERTOP)
 
 #define KERN_ACCESS(start, end)											\
-    (PBASE <= (start) && (start) < (end) && (end) <= PBASE + PSIZE ||	\
+    ((PBASE <= (start) && (start) < (end) && (end) <= PBASE + PSIZE) ||	\
 	 ((start) < (end) && KERNBASE <= (start)))
 
 #ifndef __ASSEMBLER__

@@ -19,6 +19,7 @@
 #include <intr.h>
 #include <glue_kio.h>
 #include <mp.h>
+#include <entry.h>
 
 #define TICK_NUM 30
 
@@ -173,8 +174,10 @@ trap_dispatch(struct trapframe *tf) {
         syscall();
         break;
     case IRQ_OFFSET + IRQ_TIMER:
-        ticks ++;
-        assert(current != NULL);
+		if (lcpu_idx == 0)
+			ticks ++;
+
+		assert(current != NULL);
         run_timer_list();
         break;
     case IRQ_OFFSET + IRQ_COM1:
@@ -210,12 +213,14 @@ trap(struct trapframe *tf) {
         current->tf = tf;
 
         bool in_kernel = trap_in_kernel(tf);
-		int  local_locking;
-		if (!in_kernel || current == idleproc)
-			local_locking = kern_enter();
-		
-        trap_dispatch(tf);
+		if (!in_kernel || (current == idleproc && otf == NULL))
+			kern_enter(tf->tf_trapno + 1000);
 
+		// kprintf("%d %d {{{\n", lapic_id, current->pid);
+        trap_dispatch(tf);
+		in_kernel = trap_in_kernel(current->tf);
+		// kprintf("%d %d |||\n", lapic_id, current->pid);
+		
         current->tf = otf;
         if (!in_kernel) {
             may_killed();
@@ -223,8 +228,13 @@ trap(struct trapframe *tf) {
                 schedule();
             }
         }
+		else if (current == idleproc && init_finished)
+		{
+			schedule();
+		}
 
-		if (!in_kernel || (current == idleproc && !local_locking))
+		// kprintf("%d %d }}}\n", lapic_id, current->pid);
+		if (!in_kernel || (current == idleproc && otf == NULL))
 			kern_leave();
     }
 }
@@ -250,4 +260,6 @@ trap_init_ap(void)
 	for (i = 0; i < 32; ++ i)
 		intr_handler_set(i, trap);
 	intr_handler_set(T_SYSCALL, trap);
+
+	intr_handler_set(IRQ_OFFSET + IRQ_TIMER, trap);
 }

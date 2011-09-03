@@ -69,8 +69,8 @@ SYS_getpid      : get the process's pid
 
 */
 
-PLS struct proc_struct *current;
-PLS struct proc_struct *idleproc;
+PLS struct proc_struct * volatile current;
+PLS struct proc_struct * volatile idleproc;
 struct proc_struct *initproc;
 struct proc_struct *kswapd;
 
@@ -175,7 +175,7 @@ get_pid(void) {
     list_entry_t *list = &proc_list, *le;
     static int next_safe = MAX_PID, last_pid = MAX_PID;
     if (++ last_pid >= MAX_PID) {
-        last_pid = 1;
+        last_pid = lcpu_count;
         goto inside;
     }
     if (last_pid >= next_safe) {
@@ -209,11 +209,12 @@ proc_run(struct proc_struct *proc) {
     if (proc != current) {
         bool intr_flag;
         struct proc_struct *prev = current, *next = proc;
+		// kprintf("->%d\n", next->pid);
         local_intr_save(intr_flag);
         {
             current = proc;
             load_rsp0(next->kstack + KSTACKSIZE);
-            lcr3(next->cr3);
+            mp_set_mm_pagetable(next->mm);
             switch_to(&(prev->context), &(next->context));
         }
         local_intr_restore(intr_flag);
@@ -225,6 +226,10 @@ proc_run(struct proc_struct *proc) {
 //       after switch_to, the current proc will execute here.
 static void
 forkret(void) {
+	if (!trap_in_kernel(current->tf))
+	{
+		kern_leave();
+	}
     forkrets(current->tf);
 }
 
@@ -571,7 +576,7 @@ bad_fork_cleanup_proc:
 //   3. call scheduler to switch to other process
 static int
 __do_exit(void) {
-    if (PROC_IS_IDLE(current)) {
+    if (current == idleproc) {
         panic("idleproc exit.\n");
     }
     if (current == initproc) {
@@ -580,7 +585,7 @@ __do_exit(void) {
 
     struct mm_struct *mm = current->mm;
     if (mm != NULL) {
-        lcr3(PADDR(init_pgdir_get()));
+        mp_set_mm_pagetable(NULL);
         if (mm_count_dec(mm) == 0) {
             exit_mmap(mm);
             put_pgdir(mm);
@@ -803,7 +808,7 @@ load_icode(int fd, int argc, char **kargv) {
     mm_count_inc(mm);
     current->mm = mm;
     current->cr3 = PADDR(mm->pgdir);
-    lcr3(PADDR(mm->pgdir));
+    mp_set_mm_pagetable(mm);
 
     uintptr_t stacktop = USTACKTOP - argc * PGSIZE;
     char **uargv = (char **)(stacktop - argc * sizeof(char *));
@@ -912,7 +917,7 @@ do_execve(const char *name, int argc, const char **argv) {
     }
 
     if (mm != NULL) {
-        lcr3(PADDR(init_pgdir_get()));
+        mp_set_mm_pagetable(NULL);
         if (mm_count_dec(mm) == 0) {
             exit_mmap(mm);
             put_pgdir(mm);
@@ -1352,7 +1357,7 @@ proc_init(void) {
         panic("cannot alloc idleproc.\n");
     }
 
-    idleproc->pid = 0;
+    idleproc->pid = lcpu_idx;
     idleproc->state = PROC_RUNNABLE;
 	// XXX
     // idleproc->kstack = (uintptr_t)bootstack;
@@ -1379,8 +1384,8 @@ proc_init(void) {
     initproc = find_proc(pid);
     set_proc_name(initproc, "init");
 
-    assert(idleproc != NULL && idleproc->pid == 0);
-    assert(initproc != NULL && initproc->pid == 1);
+    assert(idleproc != NULL && idleproc->pid == lcpu_idx);
+    assert(initproc != NULL && initproc->pid == lcpu_count);
 }
 
 void
@@ -1390,7 +1395,7 @@ proc_init_ap(void)
         panic("cannot alloc idleproc.\n");
     }
 
-    idleproc->pid = 0;
+    idleproc->pid = lcpu_idx;
     idleproc->state = PROC_RUNNABLE;
 	// XXX
     // idleproc->kstack = (uintptr_t)bootstack;
@@ -1408,17 +1413,16 @@ proc_init_ap(void)
     nr_process ++;
 
 	current = idleproc;
+
+	assert(idleproc != NULL && idleproc->pid == lcpu_idx);
 }
 
 // cpu_idle - at the end of kern_init, the first kernel thread idleproc will do below works
 void
 cpu_idle(void) {
     while (1) {
-        if (current->need_resched) {
-			kern_enter();
-            schedule();
-			kern_leave();
-        }
+		assert((read_rflags() & FL_IF) != 0);
+		asm volatile ("hlt");
     }
 }
 

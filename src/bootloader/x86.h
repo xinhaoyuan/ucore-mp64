@@ -82,7 +82,7 @@ sti(void) {
 
 static inline void
 cli(void) {
-    asm volatile ("cli" ::: "memory");
+    asm volatile ("cli" ::: "memory", "cc");
 }
 
 static inline void

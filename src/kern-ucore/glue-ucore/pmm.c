@@ -7,9 +7,10 @@
 #include <kio.h>
 #include <swap.h>
 #include <glue_mp.h>
+#include <glue_intr.h>
 
-PLS static size_t used_pages;
-PLS list_entry_t page_struct_free_list;
+PLS static size_t volatile used_pages;
+PLS list_entry_t volatile page_struct_free_list;
 
 static struct Page *
 page_struct_alloc(uintptr_t pa)
@@ -48,7 +49,10 @@ alloc_pages(size_t npages)
 	struct Page *result;
 	uintptr_t base = kalloc_pages(npages);
 	size_t i;
+	int flags;
 
+	local_intr_save_hw(flags);
+	
 	result = page_struct_alloc(base);
 	kpage_private_set(base, result);
 
@@ -59,6 +63,8 @@ alloc_pages(size_t npages)
 	}
 
 	used_pages += npages;
+
+	local_intr_restore_hw(flags);
 	return result;
 }
 
@@ -67,6 +73,9 @@ free_pages(struct Page *base, size_t npages)
 {
 	uintptr_t basepa = page2pa(base);
 	size_t i;
+	int flags;
+
+	local_intr_save_hw(flags);
 	
 	for (i = 0; i < npages; ++ i)
 	{
@@ -75,6 +84,8 @@ free_pages(struct Page *base, size_t npages)
 	
 	kfree_pages(basepa, npages);
 	used_pages -= npages;
+
+	local_intr_restore_hw(flags);
 }
 
 size_t

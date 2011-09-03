@@ -22,7 +22,7 @@ enum proc_state {
 #define PROC_ATTR_ROLE_NORMAL 0
 #define PROC_ATTR_ROLE_IDLE   1
 
-#define PROC_IS_IDLE(proc)   ((proc)->attribute & PROC_ATTR_ROLE == PROC_ATTR_ROLE_IDLE)
+#define PROC_IS_IDLE(proc)   (((proc)->attribute & PROC_ATTR_ROLE) == PROC_ATTR_ROLE_IDLE)
 
 struct context {
     uint64_t rip;
@@ -55,7 +55,7 @@ struct fs_struct;
 
 struct proc_struct {
     enum proc_state state;                      // Process state
-	uint32_t attribute;                         // Special attributes
+	// uint32_t attribute;                         // Special attributes
     int pid;                                    // Process ID
     int runs;                                   // the running times of Proces
     uintptr_t kstack;                           // Process kernel stack
@@ -100,8 +100,8 @@ struct proc_struct {
 #define le2proc(le, member)         \
     to_struct((le), struct proc_struct, member)
 
-extern struct proc_struct *current;
-extern struct proc_struct *idleproc;
+extern struct proc_struct * volatile current;
+extern struct proc_struct * volatile idleproc;
 extern struct proc_struct *initproc;
 extern struct proc_struct *kswapd;
 

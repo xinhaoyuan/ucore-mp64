@@ -62,6 +62,8 @@ sched_init(void) {
     kprintf("sched class: %s\n", sched_class->name);
 }
 
+#include <mp.h>
+
 void
 wakeup_proc(struct proc_struct *proc) {
     assert(proc->state != PROC_ZOMBIE);
@@ -72,6 +74,7 @@ wakeup_proc(struct proc_struct *proc) {
             proc->state = PROC_RUNNABLE;
             proc->wait_state = 0;
             if (proc != current) {
+				assert(proc->pid >= lcpu_count);
                 sched_class_enqueue(proc);
             }
         }
@@ -89,7 +92,7 @@ schedule(void) {
     local_intr_save(intr_flag);
     {
         current->need_resched = 0;
-        if (current->state == PROC_RUNNABLE) {
+        if (current->state == PROC_RUNNABLE && current->pid >= lcpu_count) {
             sched_class_enqueue(current);
         }
         if ((next = sched_class_pick_next()) != NULL) {
@@ -174,7 +177,7 @@ run_timer_list(void) {
                 timer = le2timer(le, timer_link);
             }
         }
-        sched_class_proc_tick(current);
+        if (current->rq != NULL) sched_class_proc_tick(current);
     }
     local_intr_restore(intr_flag);
 }

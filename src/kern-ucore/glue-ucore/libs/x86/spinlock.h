@@ -1,7 +1,7 @@
 #ifndef __SPINLOCK_H__
 #define __SPINLOCK_H__
 
-#include <libs/x86/atom.h>
+#include <x86/atom.h>
 
 typedef struct spinlock_s {
 	volatile unsigned int lock;

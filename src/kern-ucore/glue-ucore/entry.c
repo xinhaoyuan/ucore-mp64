@@ -13,8 +13,10 @@
 #include <mp.h>
 #include <ide.h>
 #include <trap.h>
+#include <entry.h>
 
-static int init_finished = 0;
+static spinlock_s init_lock;
+volatile int init_finished = 0;
 
 void
 __kern_entry(void)
@@ -23,7 +25,7 @@ __kern_entry(void)
 	
 	if (lcpu_idx == 0)
 	{
-		kern_enter();
+		spinlock_acquire(&init_lock);
 		
 		pmm_init_ap();
 		slab_init();
@@ -39,23 +41,28 @@ __kern_entry(void)
 		ide_init();
 		swap_init();                // init swap
 		fs_init();                  // init fs
-
+		
 		clock_init();
 
-		kern_leave();
 		init_finished = 1;
+		spinlock_release(&init_lock);
 	}
 	else
 	{
 		while (init_finished == 0);
-		kern_enter();
+		spinlock_acquire(&init_lock);
 		
 		pmm_init_ap();
 		trap_init_ap();
 		proc_init_ap();
-		
-		kern_leave();
+		clock_init_ap();
+
+		++ init_finished;
+
+		spinlock_release(&init_lock);
 	}
+
+	while (init_finished != lcpu_count) ;
 
 	intr_enable();
 	cpu_idle();                 // run idle process
