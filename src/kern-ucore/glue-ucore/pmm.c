@@ -191,7 +191,7 @@ page_remove_pte(pgd_t *pgdir, uintptr_t la, pte_t *ptep) {
             page_ref_dec(page);
         }
         *ptep = 0;
-        tlb_invalidate(pgdir, la);
+        mp_tlb_invalidate(pgdir, la);
     }
     else if (*ptep != 0) {
         swap_remove_entry(*ptep);
@@ -224,7 +224,7 @@ page_insert(pgd_t *pgdir, struct Page *page, uintptr_t la, uint32_t perm) {
 
 out:
     *ptep = page2pa(page) | PTE_P | perm;
-    tlb_invalidate(pgdir, la);
+    mp_tlb_invalidate(pgdir, la);
     return 0;
 }
 

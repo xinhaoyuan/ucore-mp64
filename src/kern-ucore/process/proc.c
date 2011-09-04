@@ -585,6 +585,7 @@ __do_exit(void) {
 
     struct mm_struct *mm = current->mm;
     if (mm != NULL) {
+		mm->lapic = -1;
         mp_set_mm_pagetable(NULL);
         if (mm_count_dec(mm) == 0) {
             exit_mmap(mm);
@@ -808,6 +809,7 @@ load_icode(int fd, int argc, char **kargv) {
     mm_count_inc(mm);
     current->mm = mm;
     current->cr3 = PADDR(mm->pgdir);
+	mm->lapic = lapic_id;
     mp_set_mm_pagetable(mm);
 
     uintptr_t stacktop = USTACKTOP - argc * PGSIZE;
@@ -917,6 +919,7 @@ do_execve(const char *name, int argc, const char **argv) {
     }
 
     if (mm != NULL) {
+		mm->lapic = -1;
         mp_set_mm_pagetable(NULL);
         if (mm_count_dec(mm) == 0) {
             exit_mmap(mm);

@@ -93,6 +93,7 @@ mm_create(void) {
         mm->brk_start = mm->brk = 0;
         list_init(&(mm->proc_mm_link));
         sem_init(&(mm->mm_sem), 1);
+		mm->lapic = -1;
     }
     return mm;
 }
@@ -782,7 +783,13 @@ do_pgfault(struct mm_struct *mm, uint64_t error_code, uintptr_t addr) {
         struct Page *page, *newpage = NULL;
         bool cow = ((vma->vm_flags & (VM_SHARE | VM_WRITE)) == VM_WRITE), may_copy = 1;
 
-        assert(!(*ptep & PTE_P) || ((error_code & 2) && !(*ptep & PTE_W) && cow));
+        if (!(!(*ptep & PTE_P) || ((error_code & 2) && !(*ptep & PTE_W) && cow)))
+		{
+			assert(PADDR(mm->pgdir) == rcr3());
+			kprintf("%p %p %d %d\n", *ptep, addr, error_code, cow);
+			assert(0);
+		}
+		
         if (cow) {
             newpage = alloc_page();
         }

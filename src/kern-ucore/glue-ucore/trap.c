@@ -174,8 +174,7 @@ trap_dispatch(struct trapframe *tf) {
         syscall();
         break;
     case IRQ_OFFSET + IRQ_TIMER:
-		if (lcpu_idx == 0)
-			ticks ++;
+		ticks ++;
 
 		assert(current != NULL);
         run_timer_list();
@@ -239,6 +238,24 @@ trap(struct trapframe *tf) {
     }
 }
 
+#include <pmm.h>
+#include <x86/atom.h>
+void
+ipi(struct trapframe *tf)
+{
+	if (ipi_raise[lapic_id])
+	{
+		// kprintf("LCPU %d GOT IPI\n", lcpu_idx);
+		tlb_invalidate(mpti_pgdir, mpti_la);
+
+		// kprintf("LCPU %d ENDING IPI\n", lcpu_idx);
+		while (mpti_end == 0);
+		ipi_raise[lapic_id] = 0;
+		
+		// kprintf("LCPU %d END IPI\n", lcpu_idx);
+	}
+}
+
 void
 trap_init(void)
 {
@@ -246,7 +263,8 @@ trap_init(void)
 	for (i = 0; i < 32; ++ i)
 		intr_handler_set(i, trap);
 	intr_handler_set(T_SYSCALL, trap);
-
+	intr_handler_set(T_IPI, ipi);
+	
 	intr_handler_set(IRQ_OFFSET + IRQ_TIMER, trap);
 	intr_handler_set(IRQ_OFFSET + IRQ_COM1, trap);
 	intr_handler_set(IRQ_OFFSET + IRQ_KBD, trap);
@@ -260,6 +278,7 @@ trap_init_ap(void)
 	for (i = 0; i < 32; ++ i)
 		intr_handler_set(i, trap);
 	intr_handler_set(T_SYSCALL, trap);
+	intr_handler_set(T_IPI, ipi);
 
 	intr_handler_set(IRQ_OFFSET + IRQ_TIMER, trap);
 }

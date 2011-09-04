@@ -120,7 +120,7 @@ static void
 trap_dispatch(struct trapframe *tf) {
 	int lcpu_id = lapic_id();
 	intr_handler_f h = lcpu_static[lcpu_id].intr_handler[tf->tf_trapno];
-
+	
 	if (tf->tf_trapno >= IRQ_OFFSET && tf->tf_trapno < IRQ_OFFSET + IRQ_COUNT)
 	{
 		if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER)
@@ -150,6 +150,9 @@ trap_dispatch(struct trapframe *tf) {
 				panic("unexpected trap in kernel.\n");
 			}
 		}
+
+		if (tf->tf_trapno == T_IPI)
+			lapic_send_eoi();
 	}
 }
 

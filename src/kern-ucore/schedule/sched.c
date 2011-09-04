@@ -85,23 +85,54 @@ wakeup_proc(struct proc_struct *proc) {
     local_intr_restore(intr_flag);
 }
 
+#include <vmm.h>
+
 void
 schedule(void) {
     bool intr_flag;
     struct proc_struct *next;
+	list_entry_t head;
+	
     local_intr_save(intr_flag);
     {
         current->need_resched = 0;
+		if (current->mm)
+		{
+			assert(current->mm->lapic == lapic_id);
+			current->mm->lapic = -1;
+		}
         if (current->state == PROC_RUNNABLE && current->pid >= lcpu_count) {
             sched_class_enqueue(current);
         }
-        if ((next = sched_class_pick_next()) != NULL) {
-            sched_class_dequeue(next);
-        }
+		list_init(&head);
+		while (1)
+		{
+			next = sched_class_pick_next();
+			if (next != NULL) sched_class_dequeue(next);
+
+			if (next && next->mm && next->mm->lapic != -1)
+			{
+				list_add(&head, &(next->run_link));
+			}
+			else
+			{
+				list_entry_t *cur;
+				while ((cur = list_next(&head)) != &head)
+				{
+					list_del_init(cur);
+					sched_class_enqueue(le2proc(cur, run_link));
+				}
+
+				break;
+			}
+		}
         if (next == NULL) {
             next = idleproc;
         }
         next->runs ++;
+		assert(!next->mm || next->mm->lapic == -1);
+		if (next->mm)
+			next->mm->lapic = lapic_id;
         if (next != current) {
             proc_run(next);
         }
@@ -177,7 +208,7 @@ run_timer_list(void) {
                 timer = le2timer(le, timer_link);
             }
         }
-        if (current->rq != NULL) sched_class_proc_tick(current);
+        sched_class_proc_tick(current);
     }
     local_intr_restore(intr_flag);
 }

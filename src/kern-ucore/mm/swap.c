@@ -553,7 +553,7 @@ swap_out_vma(struct mm_struct *mm, struct vma_struct *vma, uintptr_t addr, size_
             assert(!PageReserved(page));
             if (*ptep & PTE_A) {
                 *ptep &= ~PTE_A;
-                tlb_invalidate(mm->pgdir, addr);
+                mp_tlb_invalidate(mm->pgdir, addr);
                 goto try_next_entry;
             }
             if (!PageSwap(page)) {
@@ -569,7 +569,7 @@ swap_out_vma(struct mm_struct *mm, struct vma_struct *vma, uintptr_t addr, size_
             swap_duplicate(entry);
             page_ref_dec(page);
             *ptep = entry;
-            tlb_invalidate(mm->pgdir, addr);
+            mp_tlb_invalidate(mm->pgdir, addr);
             mm->swap_address = addr + PGSIZE;
             free_count ++, require --;
             if ((vma->vm_flags & VM_SHARE) && page_ref(page) == 1) {
