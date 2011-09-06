@@ -156,7 +156,7 @@ lapic_init(void)
 
 // Acknowledge interrupt.
 void
-lapic_send_eoi(void)
+lapic_eoi_send(void)
 {
 	lapicw(EOI, 0);
 }
@@ -178,7 +178,7 @@ microdelay(int us)
 // Start additional processor running bootstrap code at addr.
 // See Appendix B of MultiProcessor Specification.
 void
-lapic_start_ap(int apicid, uint32_t addr)
+lapic_ap_start(int apicid, uint32_t addr)
 {
 	int i;
 	uint16_t *wrv;
@@ -214,7 +214,7 @@ lapic_start_ap(int apicid, uint32_t addr)
 /* }}} */
 
 void
-lapic_set_timer(uint32_t freq)
+lapic_timer_set(uint32_t freq)
 {
 	if (freq == 0)
 	{

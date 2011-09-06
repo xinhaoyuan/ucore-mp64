@@ -18,7 +18,7 @@ clean:
 
 
 qemu: all
-	${QEMU} -smp 4 \
+	${QEMU} -smp 4 -m 512 \
 	-hda ${T_OBJ}/kernel.img \
 	-drive file=${T_OBJ}/swap.img,media=disk,cache=writeback \
 	-drive file=${T_OBJ}/sfs.img,media=disk,cache=writeback \

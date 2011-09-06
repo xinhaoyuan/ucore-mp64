@@ -27,6 +27,9 @@ mp_init(void)
 	int i, max_apic = 0;
 	for (i = 0; i != sysconf.lcpu_count; ++ i)
 	{
+		lcpu_static[lcpu_id_set[i]].public.idx = i;
+		lcpu_static[lcpu_id_set[i]].public.lapic_id = lcpu_id_set[i];
+		
 		lcpu_id_inv[lcpu_id_set[i]] = i;
 		if (lcpu_id_set[i] > max_apic) max_apic = lcpu_id_set[i];
 	}
@@ -41,7 +44,7 @@ mp_init(void)
 		apic_id = lcpu_id_set[i];
 		if (apic_id != sysconf.lcpu_boot)
 		{
-			lapic_start_ap(apic_id, BOOT_AP_ENTRY);
+			lapic_ap_start(apic_id, BOOT_AP_ENTRY);
 		}
 	 }
 

@@ -95,8 +95,7 @@ do_idle(void)
 
 	while (1)
 	{
-		proc_current->time_slice = 0;
-		proc_schedule();
+		proc_yield();
 	}
 }
 
@@ -129,6 +128,13 @@ proc_init(void)
 
 	proc_current = proc;
 	return 0;
+}
+
+void
+proc_yield(void)
+{
+	proc_current->time_slice = 0;
+	proc_schedule();
 }
 
 void

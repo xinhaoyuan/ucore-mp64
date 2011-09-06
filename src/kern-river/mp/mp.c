@@ -3,6 +3,7 @@
 PLS int lapic_id;
 PLS int lcpu_idx;
 PLS int lcpu_count;
+PLS uint64_t lcpu_freq;
 
 int mpconf_main_lcpu_idx;
 

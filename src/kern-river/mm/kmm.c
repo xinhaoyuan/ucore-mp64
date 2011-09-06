@@ -90,9 +90,18 @@ kalloc(size_t size)
 	int size_index = bsr(size + META_SIZE - 1) - MIN_SHIFT + 1;
 	 
 	void *result;
-	if (size_index < 0 || size_index > ALLOC_DELTA_SHIFT)
+	if (size_index < 0)
 		result = NULL;
-	else result = kmm_ialloc((kmm_ctrl_s *)ctrl + size_index);
+	else if (size_index <= ALLOC_DELTA_SHIFT)
+	{
+		result = kmm_ialloc((kmm_ctrl_s *)ctrl + size_index);
+	}
+	else
+	{
+		uintptr_t psize = (size + 2 * PGSIZE - 1) >> PGSHIFT;
+		result = KADDR_DIRECT(kalloc_pages(psize) + PGSIZE);
+		*((uintptr_t *)result - 1) = psize;
+	}
 
 	local_irq_restore();
 	return result;
@@ -103,12 +112,19 @@ kfree(void *ptr)
 {
 	if (ptr == NULL) return;
 	local_irq_save();
-	 
-	uintptr_t *head = ((uintptr_t *)ptr - 1);
-	kmm_ctrl_s *ctrl = (kmm_ctrl_s *)*head;
-	
-	*head = ctrl->head;
-	ctrl->head = (uintptr_t)head;
+
+	if ((uintptr_t)ptr & (PGSIZE - 1))
+	{
+		uintptr_t *head = ((uintptr_t *)ptr - 1);
+		kmm_ctrl_s *ctrl = (kmm_ctrl_s *)*head;
+		
+		*head = ctrl->head;
+		ctrl->head = (uintptr_t)head;
+	}
+	else
+	{
+		kfree_pages((uintptr_t)PADDR_DIRECT(ptr) - PGSIZE, *((uintptr_t *)ptr - 1));
+	}
 	
 	local_irq_restore();
 }

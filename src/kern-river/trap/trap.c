@@ -10,8 +10,6 @@
 #include <debug/io.h>
 #include <proc/ipe.h>
 
-#define IRQ_COUNT 32
-
 PLS static uint64_t irq_mask;
 PLS static uint64_t irq_accumulate[IRQ_COUNT];
 PLS static irq_handler_f irq_handler[IRQ_COUNT];
@@ -104,6 +102,8 @@ trap_dispatch(struct trapframe *tf)
 			
 			-- proc_current->irq_save_level;
 		}
+
+		irq_ack(tf->tf_trapno - IRQ_OFFSET);
 	}
 	else
 	{

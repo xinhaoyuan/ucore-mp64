@@ -10,6 +10,7 @@
 #include <mp/mp.h>
 #include <drivers/hpet.h>
 #include <init.h>
+#include <libs/x86/rdtsc.h>
 
 PLS crh_s crh;
 
@@ -60,8 +61,10 @@ timer_queue_append(crh_node_t node)
 
 PLS uint64_t old_hpet_tick;
 PLS uint64_t old_tick;
+PLS uint64_t old_tsc;
 PLS uint64_t new_hpet_tick;
 PLS uint64_t new_tick;
+PLS uint64_t new_tsc;
 
 #define MEASURE_TICK 200
 
@@ -73,9 +76,16 @@ measure_event(event_t e)
 {
 	new_hpet_tick = *hpet_tick;
 	new_tick = timer_tick;
+	new_tsc = rdtsc();
 	
-	uint64_t freq = (new_tick - old_tick) / ((double)(new_hpet_tick - old_hpet_tick) / hpet_tick_freq) * 2 + 1;
+	double time_inv = ((double)(new_hpet_tick - old_hpet_tick) / hpet_tick_freq);
+	uint64_t freq = (new_tick - old_tick) / time_inv * 2 + 1;
+	lcpu_freq = (new_tsc - old_tsc) / time_inv * 2 + 1;
+	lcpu_freq >>= 1;
+	
 	timer_freq = freq >> 1;
+
+	kprintf("LCPU %d FREQ %d TICK FREQ %d\n", lcpu_idx, lcpu_freq, timer_freq);
 
 	event_activate(init_event);
 }
@@ -85,6 +95,7 @@ timer_measure(void)
 {
 	old_hpet_tick = *hpet_tick;
 	old_tick = timer_tick;
+	old_tsc = rdtsc();
 
 	eproc_open(&measure_eproc, "timer_measure", (void(*)(void))proc_wait_try, NULL, 8192);
 	event_open(&measure_timer.event, &measure_eproc.event_pool, measure_event, NULL);

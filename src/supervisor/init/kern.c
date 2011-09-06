@@ -137,7 +137,7 @@ irq_disable(int irq_no)
 void
 irq_ack(int irq_no)
 {
-	// lapic_send_eoi();
+	lapic_eoi_send();
 	// ioapic_send_eoi(irq_no);
 }
 
@@ -174,7 +174,7 @@ kfree_pages(uintptr_t pa, size_t npages)
 void
 tick_init(int freq)
 {
-	lapic_set_timer(freq);
+	lapic_timer_set(freq);
 }
 
 unsigned int

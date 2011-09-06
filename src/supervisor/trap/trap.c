@@ -135,8 +135,6 @@ trap_dispatch(struct trapframe *tf) {
 			if (h != NULL && lcpu_id == irq_control[tf->tf_trapno - IRQ_OFFSET].lcpu_apic_id)
 				h(tf);
 		}
-
-		lapic_send_eoi();
 	}
 	else
 	{
@@ -152,7 +150,7 @@ trap_dispatch(struct trapframe *tf) {
 		}
 
 		if (tf->tf_trapno == T_IPI)
-			lapic_send_eoi();
+			lapic_eoi_send();
 	}
 }
 

@@ -198,6 +198,10 @@ trap_dispatch(struct trapframe *tf) {
         }
         panic("unexpected trap in kernel.\n");
     }
+
+	if (tf->tf_trapno >= IRQ_OFFSET &&
+		tf->tf_trapno <  IRQ_OFFSET + IRQ_COUNT)
+		irq_ack(tf->tf_trapno - IRQ_OFFSET);
 }
 
 void

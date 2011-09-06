@@ -6,10 +6,19 @@
 
 typedef void(*intr_handler_f)(struct trapframe *tf);
 
+typedef struct lcpu_info_s
+{
+	int      lapic_id;
+	int      idx;
+	uint64_t freq;
+} lcpu_info_s;
+
 typedef struct lcpu_static_s
 {
 	pgd_t *init_pgdir;
 	intr_handler_f intr_handler[256];
+
+	lcpu_info_s public;
 } lcpu_static_s;
 
 typedef struct lcpu_dynamic_s

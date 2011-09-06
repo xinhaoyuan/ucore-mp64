@@ -1,6 +1,8 @@
 #ifndef __RIVER_TRAP_H__
 #define __RIVER_TRAP_H__
 
+#define IRQ_COUNT 32
+
 void local_irq_save(void);
 void local_irq_restore(void);
 

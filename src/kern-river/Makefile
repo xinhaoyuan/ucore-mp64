@@ -16,7 +16,8 @@ ${T_OBJ}/kern-bin: ${T_OBJ}/kern
 
 ${T_OBJ}/kern: ${OBJFILES} ${T_OBJ}/kern-svsym.S.o ${T_OBJ}/libv3vee.a ${T_OBJ}/vm_image.o ../glue-kern/kern.ld
 	@echo LD $@
-	${V}${LD} -T ../glue-kern/kern.ld -z max-page-size=0x1000 --whole-archive -o$@ ${OBJFILES} ${T_OBJ}/kern-svsym.S.o
+	${V}${LD} -T ../glue-kern/kern.ld -z max-page-size=0x1000 --whole-archive -o$@ \
+		${OBJFILES} ${T_OBJ}/kern-svsym.S.o ${T_OBJ}/libv3vee.a ${T_OBJ}/vm_image.o
 
 ${T_OBJ}/svsym.o: ${T_OBJ}/supervisor
 	${V}objcopy --extract-symbol $< $@

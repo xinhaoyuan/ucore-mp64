@@ -39,7 +39,7 @@ clock_init(void) {
     outb(IO_TIMER1, TIMER_DIV(100) / 256);
 	pic_enable(IRQ_TIMER);
 #else
-	lapic_set_timer(100);
+	lapic_timer_set(100);
 #endif
 
     // initialize time counter 'ticks' to zero

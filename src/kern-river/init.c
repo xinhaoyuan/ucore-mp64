@@ -46,7 +46,8 @@ do_init(event_t e)
 
 	if (lcpu_idx == mpconf_main_lcpu_idx)
 	{
-		// vm_init();
+		vm_init();
+		vm_start();
 	}
 
 	/* ipe init here is also an all lcpu barrier */

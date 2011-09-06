@@ -43,6 +43,7 @@ typedef void(*proc_entry_f)(void *arg);
 int  proc_init(void);
 int  proc_open(proc_t proc, const char *name, proc_entry_f entry, void *args, void *private, uintptr_t stack);
 void proc_schedule(void);
+void proc_yield(void);
 void proc_wait_pretend(void);
 int  proc_wait_try(void);
 int  proc_notify(proc_t proc);
