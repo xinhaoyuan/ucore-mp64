@@ -10,7 +10,6 @@
 
 #define MAX_PROC_NAME 32
 
-typedef void (*proc_idle_f) (void);
 typedef struct proc_s *proc_t;
 typedef struct proc_s
 {
@@ -23,28 +22,33 @@ typedef struct proc_s
 	uint32_t     time_slice;
 	uint32_t     irq_save_level;
 
-	proc_idle_f  idle;
 	void        *private;
-
-	event_pool_s event_pool;
 } proc_s;
 
-#define PROC_TYPE_UNKNOWN 0x0
-#define PROC_TYPE_KTHREAD 0x1
+#define PROC_TYPE_KTHREAD 0x0
+#define PROC_TYPE_KEVENTD 0x1
 #define PROC_TYPE_UTHREAD 0x2
 #define PROC_TYPE_IDLE    0x3
 
 #define PROC_STATUS_UNINIT          0
-#define PROC_STATUS_RUNNABLE        1
-#define PROC_STATUS_WAIT            2
-#define PROC_STATUS_ZOMBIE          3
+#define PROC_STATUS_RUNNABLE_WEAK   1
+#define PROC_STATUS_RUNNABLE_STRONG 2
+#define PROC_STATUS_WAIT            3
+#define PROC_STATUS_ZOMBIE          4
 
 extern volatile proc_t proc_current;
 
+typedef void(*proc_entry_f)(void *arg);
+
 int  proc_init(void);
-int  proc_open(proc_t proc, const char *name, proc_idle_f idle, void *private, uintptr_t stack);
+int  proc_open(proc_t proc, const char *name, proc_entry_f entry, void *args, void *private, uintptr_t stack);
 void proc_schedule(void);
+void proc_wait_pretend(void);
+int  proc_wait_try(void);
+int  proc_notify(proc_t proc);
 int  proc_close(proc_t proc);
 int  proc_exit(void);
+
+void do_idle(void);
 
 #endif

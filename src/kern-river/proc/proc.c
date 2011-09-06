@@ -5,13 +5,10 @@
 #include <trap/trap.h>
 #include <libs/string.h>
 #include <proc/ipe.h>
-#include <proc/event.h>
 #include <init.h>
 
 #define SCHED_NODE_TO_PROC(sch)											\
 	((proc_t)((char *)(sch) - (uintptr_t)(&((proc_t)0)->sched_node)))
-#define EVENT_POOL_TO_PROC(sch)											\
-	((proc_t)((char *)(sch) - (uintptr_t)(&((proc_t)0)->event_pool)))
 
 #define PROC_TIME_SLICE_DEFAULT 50
 
@@ -30,11 +27,13 @@ void
 proc_schedule(void)
 {
 	local_irq_save();
-	if (proc_current->time_slice == 0 ||
-		proc_current->status != PROC_STATUS_RUNNABLE)
+	int proc_runnable =
+		proc_current->status == PROC_STATUS_RUNNABLE_WEAK ||
+		proc_current->status == PROC_STATUS_RUNNABLE_STRONG;
+	
+	if (proc_current->time_slice == 0 || !proc_runnable)
 	{
-		if (proc_current->type != PROC_TYPE_IDLE &&
-			proc_current->status == PROC_STATUS_RUNNABLE)
+		if (proc_current->type != PROC_TYPE_IDLE && proc_runnable)
 			sched_attach(&proc_current->sched_node);
 
 		struct sched_node_s *s = sched_pick();
@@ -59,40 +58,8 @@ proc_schedule(void)
 	local_irq_restore();
 }
 
-static void
-proc_public_entry(proc_t proc)
-{
-	event_loop(&proc->event_pool);
-}
-
-static void
-proc_ep_touch(event_pool_t pool)
-{
-	/* assume intr is disabled */
-	proc_t proc = EVENT_POOL_TO_PROC(pool);
-	if (proc->status != PROC_STATUS_RUNNABLE)
-	{
-		proc->status = PROC_STATUS_RUNNABLE;
-		sched_attach(&proc->sched_node);
-	}
-}
-
-static void
-proc_ep_exhaust(event_pool_t pool)
-{
-	proc_t proc = EVENT_POOL_TO_PROC(pool);
-	proc->idle();
-}
-
-static void
-proc_ep_stop(event_pool_t pool)
-{
-	// proc_t proc = EVENT_POOL_TO_PROC(pool);
-	/* XXX */
-}
-
 int
-proc_open(proc_t proc, const char *name, proc_idle_f idle, void *private, uintptr_t stack)
+proc_open(proc_t proc, const char *name, proc_entry_f entry, void *args, void *private, uintptr_t stack)
 {
 	if (name != NULL)
 	{
@@ -104,15 +71,13 @@ proc_open(proc_t proc, const char *name, proc_idle_f idle, void *private, uintpt
 	}
 	proc->name[MAX_PROC_NAME - 1] = 0;
 
-	proc->type     = PROC_TYPE_UNKNOWN;
-	proc->idle     = idle;
+	proc->type     = PROC_TYPE_KTHREAD;
 	proc->private  = private;
 
 	proc->irq_save_level = 0;
 	 
-	context_fill(&proc->kern_ctx, (void(*)(void *))proc_public_entry, proc, stack);
+	context_fill(&proc->kern_ctx, entry, args, stack);
 	sched_node_init(&proc->sched_node);
-	event_pool_init(&proc->event_pool, proc_ep_touch, proc_ep_exhaust, proc_ep_stop);
 	 
 	proc->time_slice = PROC_TIME_SLICE_DEFAULT;
 	proc->status     = PROC_STATUS_UNINIT;
@@ -120,16 +85,19 @@ proc_open(proc_t proc, const char *name, proc_idle_f idle, void *private, uintpt
 	return 0;
 }
 
-static void
-idle_idle(void)
+void
+do_idle(void)
 {
 	if (init_finished)
 	{
 		event_activate(ipe_event);
 	}
-	
-	proc_current->time_slice = 0;
-	proc_schedule();
+
+	while (1)
+	{
+		proc_current->time_slice = 0;
+		proc_schedule();
+	}
 }
 
 int
@@ -147,7 +115,6 @@ proc_init(void)
 	proc->name[MAX_PROC_NAME - 1] = 0;
 
 	proc->type     = PROC_TYPE_IDLE;
-	proc->idle     = idle_idle;
 	proc->private  = NULL;
 
 	proc->irq_save_level = 0;
@@ -156,11 +123,62 @@ proc_init(void)
 	proc->kern_ctx.stk_top = 0x0;
 		
 	sched_node_init(&proc->sched_node);
-	event_pool_init(&proc->event_pool, proc_ep_touch, proc_ep_exhaust, proc_ep_stop);
-	
+
 	proc->time_slice = PROC_TIME_SLICE_DEFAULT;
-	proc->status     = PROC_STATUS_RUNNABLE;
+	proc->status     = PROC_STATUS_RUNNABLE_WEAK;
 
 	proc_current = proc;
+	return 0;
+}
+
+void
+proc_wait_pretend(void)
+{
+	int flag;
+	local_intr_save_hw(flag);
+	proc_current->status = PROC_STATUS_RUNNABLE_WEAK;
+	local_intr_restore_hw(flag);
+}
+
+int
+proc_wait_try(void)
+{
+	int flag, to_schedule = 0;
+	local_intr_save_hw(flag);
+	switch (proc_current->status)
+	{
+	case PROC_STATUS_RUNNABLE_WEAK:
+		proc_current->status = PROC_STATUS_WAIT;
+		to_schedule = 1;
+		break;
+
+	case PROC_STATUS_RUNNABLE_STRONG:
+		proc_current->status = PROC_STATUS_RUNNABLE_WEAK;
+		break;
+	}
+	local_intr_restore_hw(flag);
+
+	if (to_schedule)
+		proc_schedule();
+
+	return to_schedule;
+}
+
+int
+proc_notify(proc_t proc)
+{
+	int flag;
+	local_intr_save_hw(flag);
+	if (proc->status == PROC_STATUS_RUNNABLE_WEAK)
+	{
+		proc->status = PROC_STATUS_RUNNABLE_STRONG;
+	}
+	else if (proc->status == PROC_STATUS_WAIT)
+	{
+		proc->status = PROC_STATUS_RUNNABLE_WEAK;
+		sched_attach(&proc->sched_node);
+	}
+	local_intr_restore_hw(flag);
+
 	return 0;
 }

@@ -1,1 +1,4 @@
 obj/*
+src/prebuilt/*
+!src/prebuilt/Makefile
+!src/prebuilt/README

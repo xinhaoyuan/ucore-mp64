@@ -1,14 +1,14 @@
-#include <driver/timer.h>
+#include <drivers/timer.h>
 #include <glue_intr.h>
 #include <trap/trap.h>
-#include <proc/proc.h>
+#include <proc/eproc.h>
 #include <glue_tick.h>
 #include <libs/crh.h>
 #include <proc/event.h>
 #include <glue_pmm.h>
 #include <debug/io.h>
 #include <mp/mp.h>
-#include <driver/hpet.h>
+#include <drivers/hpet.h>
 #include <init.h>
 
 PLS crh_s crh;
@@ -66,6 +66,7 @@ PLS uint64_t new_tick;
 #define MEASURE_TICK 200
 
 PLS static timer_s measure_timer;
+PLS static eproc_s measure_eproc;
 
 static void
 measure_event(event_t e)
@@ -84,8 +85,9 @@ timer_measure(void)
 {
 	old_hpet_tick = *hpet_tick;
 	old_tick = timer_tick;
-	
-	event_open(&measure_timer.event, &proc_current->event_pool, measure_event, NULL);
+
+	eproc_open(&measure_eproc, "timer_measure", (void(*)(void))proc_wait_try, NULL, 8192);
+	event_open(&measure_timer.event, &measure_eproc.event_pool, measure_event, NULL);
 	timer_open(&measure_timer, old_tick + MEASURE_TICK);
 }
 

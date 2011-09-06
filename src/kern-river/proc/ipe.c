@@ -6,9 +6,9 @@
 #include <debug/io.h>
 #include <glue_pmm.h>
 #include <libs/x86/atom.h>
-#include <driver/rand.h>
-#include <driver/timer.h>
-#include <proc/proc.h>
+#include <drivers/rand.h>
+#include <drivers/timer.h>
+#include <proc/eproc.h>
 
 #define RBUF_PAGES 16
 #define RBUF_SIZE  (RBUF_PAGES << PGSHIFT)
@@ -20,17 +20,10 @@
 PLS static volatile ipe_packet_t *local_recv_buffer;
 static volatile ipe_packet_t *remote_recv_buffer[LAPIC_COUNT];
 
-PLS static proc_s ipe_proc;
+PLS static eproc_s ipe_eproc;
 PLS static event_s __ipe_event;
 PLS event_t ipe_event = &__ipe_event;
 PLS static timer_s ipe_timer;
-
-static void
-ipe_idle(void)
-{
-	proc_current->status = PROC_STATUS_WAIT;
-	proc_schedule();
-}
 
 static void
 ipe_packet_handle(ipe_packet_t packet)
@@ -95,12 +88,12 @@ ipe_init(void)
 		(ipe_packet_t *)KADDR_DIRECT(kalloc_pages(RBUF_PAGES));
 	spinlock_release(&ipe_init_alloc_lock);
 	
-	proc_open(&ipe_proc, "ipe", ipe_idle, NULL, (uintptr_t)KADDR_DIRECT(kalloc_pages(4)) + 4 * PGSIZE);
-	ipe_proc.status = PROC_STATUS_WAIT;
-	event_open(ipe_event, &ipe_proc.event_pool, do_ipe, NULL);
-	event_open(&ipe_timer.event, &ipe_proc.event_pool, do_ipe, NULL);
+	eproc_open(&ipe_eproc, "ipe", (void(*)(void))proc_wait_try, NULL, 8192);
+	event_open(ipe_event, &ipe_eproc.event_pool, do_ipe, NULL);
+	event_open(&ipe_timer.event, &ipe_eproc.event_pool, do_ipe, NULL);
 	timer_open(&ipe_timer, timer_tick + IPE_REFRESH_INV * timer_freq);
 
+	/* ALL CPU BARRIER {{{ */	
 	/* XXX: use naive CAS here =_= for atomic inc */
 	while (1)
 	{
@@ -109,6 +102,7 @@ ipe_init(void)
 	}
 	
 	while (ipe_ready != lcpu_count) ;
+	/* }}} */
 	
 	return 0;
 }

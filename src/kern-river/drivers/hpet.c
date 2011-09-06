@@ -1,4 +1,4 @@
-#include <driver/hpet.h>
+#include <drivers/hpet.h>
 #include <mp/mp.h>
 #include <glue_pmm.h>
 #include <glue_tick.h>

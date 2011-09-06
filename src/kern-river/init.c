@@ -1,7 +1,7 @@
 #include <proc/proc.h>
 #include <mp/mp.h>
-#include <driver/timer.h>
-#include <driver/hpet.h>
+#include <drivers/timer.h>
+#include <drivers/hpet.h>
 #include <trap/trap.h>
 #include <mm/kmm.h>
 #include <glue_kio.h>
@@ -9,13 +9,17 @@
 #include <debug/io.h>
 #include <glue_pmm.h>
 #include <proc/ipe.h>
-#include <driver/rand.h>
+#include <drivers/rand.h>
+#include <drivers/pci.h>
+#include <proc/eproc.h>
 
 PLS static event_s __init_event;
-PLS static proc_s  init_proc;
+PLS static eproc_s init_eproc;
 
 PLS event_t init_event = &__init_event;
 PLS int init_finished = 0;
+
+#if IPE_PACKET_TEST
 
 static ipe_packet_s ping_packet;
 
@@ -31,24 +35,26 @@ ping_packet_back_handler(ipe_packet_t packet)
 	kprintf("CPU %d: PONG!\n", lapic_id);
 }
 
+#endif
+
 static void
 do_init(event_t e)
 {
+	/* For each processor, the init event is activated to do
+	 * initializations of system services when all system components are
+	 * ready */
+
+	if (lcpu_idx == mpconf_main_lcpu_idx)
+	{
+		// vm_init();
+	}
+
+	/* ipe init here is also an all lcpu barrier */
 	ipe_init();
 
-	if (lapic_id == 2)
-	{
-		ipe_packet_send(1, &ping_packet);
-	}
-	
+	kprintf("LCPU %d DONE\n", lcpu_idx);
+	/* All initialzations are done */
 	init_finished = 1;
-}
-
-static void
-init_idle(void)
-{
-	proc_current->status = PROC_STATUS_WAIT;
-	proc_schedule();
 }
 
 void
@@ -57,15 +63,8 @@ __kern_entry(void)
 	mp_init();
 	proc_init();
 
-	/* XXX: UGLY */
-	proc_open(&init_proc, "init", init_idle, NULL, (uintptr_t)KADDR_DIRECT(kalloc_pages(4)) + 4 * PGSIZE);
-	init_proc.status = PROC_STATUS_WAIT;
-	event_open(init_event, &init_proc.event_pool, do_init, NULL);
-
-	if (lapic_id == 2)
-	{
-		ipe_packet_init(&ping_packet, ping_packet_handler, ping_packet_back_handler, NULL);
-	}
+	eproc_open(&init_eproc, "init", (void(*)(void))proc_wait_try, NULL, 8192);
+	event_open(init_event, &init_eproc.event_pool, do_init, NULL);
 	
 	kmm_init();
 	trap_init();
@@ -77,8 +76,8 @@ __kern_entry(void)
 	
 	local_intr_enable_hw;
 	timer_measure();
-	
-	event_loop(&proc_current->event_pool);
+
+	do_idle();
 	/* XXX: PANIC - IDLE ENDS HERE */
 	while (1) ;
 }

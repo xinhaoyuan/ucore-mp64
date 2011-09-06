@@ -1,5 +1,5 @@
-#include <driver/rand.h>
-#include <driver/hpet.h>
+#include <drivers/rand.h>
+#include <drivers/hpet.h>
 #include <glue_intr.h>
 #include <glue_mp.h>
 
