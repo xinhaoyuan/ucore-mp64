@@ -184,14 +184,14 @@ palacios_mutex_free(void *mutex)
 static void 
 palacios_mutex_lock(void *mutex, int must_spin)
 {
-	while (!spinlock_acquire_try((spinlock_t )mutex))
+	while (!spinlock_acquire_try((spinlock_t)mutex))
 		proc_yield();
 }
 
 static void 
 palacios_mutex_unlock(void *mutex)
 {
-	spinlock_release((spinlock_t )mutex);
+	spinlock_release((spinlock_t)mutex);
 }
 
 static void
@@ -243,8 +243,18 @@ vm_init(void)
 	return 0;
 }
 
+static void
+vm_kthread(void *__args)
+{
+	v3_start_vm(vm_info, 0);
+}
+
+static proc_s vm_proc;
+
 void
 vm_start(void)
 {
-	v3_start_vm(vm_info, 0);
+	proc_open(&vm_proc, "vm_kthread", vm_kthread, NULL, NULL, (uintptr_t)KADDR_DIRECT(kalloc_pages(4)) + (4 << PGSHIFT));
+	vm_proc.status = PROC_STATUS_WAIT;
+	proc_notify(&vm_proc);
 }

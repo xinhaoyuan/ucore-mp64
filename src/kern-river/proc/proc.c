@@ -58,8 +58,15 @@ proc_schedule(void)
 	local_irq_restore();
 }
 
+static void
+proc_public_entry(void *__arg)
+{
+	proc_current->entry(__arg);
+	/* XXX proc exit */
+}
+
 int
-proc_open(proc_t proc, const char *name, proc_entry_f entry, void *args, void *private, uintptr_t stack)
+proc_open(proc_t proc, const char *name, proc_entry_f entry, void *arg, void *private, uintptr_t stack)
 {
 	if (name != NULL)
 	{
@@ -73,10 +80,11 @@ proc_open(proc_t proc, const char *name, proc_entry_f entry, void *args, void *p
 
 	proc->type     = PROC_TYPE_KTHREAD;
 	proc->private  = private;
+	proc->entry    = entry;
 
 	proc->irq_save_level = 0;
 	 
-	context_fill(&proc->kern_ctx, entry, args, stack);
+	context_fill(&proc->kern_ctx, proc_public_entry, arg, stack);
 	sched_node_init(&proc->sched_node);
 	 
 	proc->time_slice = PROC_TIME_SLICE_DEFAULT;
@@ -88,13 +96,10 @@ proc_open(proc_t proc, const char *name, proc_entry_f entry, void *args, void *p
 void
 do_idle(void)
 {
-	if (init_finished)
-	{
-		event_activate(ipe_event);
-	}
-
 	while (1)
 	{
+		if (init_finished)
+			event_activate(ipe_event);
 		proc_yield();
 	}
 }
@@ -114,6 +119,7 @@ proc_init(void)
 	proc->name[MAX_PROC_NAME - 1] = 0;
 
 	proc->type     = PROC_TYPE_IDLE;
+	proc->entry    = NULL;
 	proc->private  = NULL;
 
 	proc->irq_save_level = 0;

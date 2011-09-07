@@ -11,6 +11,8 @@
 #define MAX_PROC_NAME 32
 
 typedef struct proc_s *proc_t;
+typedef void(*proc_entry_f)(void *arg);
+
 typedef struct proc_s
 {
 	uint32_t     type;
@@ -22,6 +24,7 @@ typedef struct proc_s
 	uint32_t     time_slice;
 	uint32_t     irq_save_level;
 
+	proc_entry_f entry;
 	void        *private;
 } proc_s;
 
@@ -38,10 +41,8 @@ typedef struct proc_s
 
 extern volatile proc_t proc_current;
 
-typedef void(*proc_entry_f)(void *arg);
-
 int  proc_init(void);
-int  proc_open(proc_t proc, const char *name, proc_entry_f entry, void *args, void *private, uintptr_t stack);
+int  proc_open(proc_t proc, const char *name, proc_entry_f entry, void *arg, void *private, uintptr_t stack);
 void proc_schedule(void);
 void proc_yield(void);
 void proc_wait_pretend(void);

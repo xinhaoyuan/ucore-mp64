@@ -12,6 +12,7 @@
 #include <drivers/rand.h>
 #include <drivers/pci.h>
 #include <proc/eproc.h>
+#include <vm/vm.h>
 
 PLS static event_s __init_event;
 PLS static eproc_s init_eproc;
@@ -74,11 +75,12 @@ __kern_entry(void)
 	timer_init();
 
 	rand_init();
-	
+
 	local_intr_enable_hw;
 	timer_measure();
 
 	do_idle();
-	/* XXX: PANIC - IDLE ENDS HERE */
-	while (1) ;
+	/* PANIC - IDLE ENDS HERE */
+	kprintf("[%d]IDLE EXIT\n", lapic_id);
+	while (1) asm volatile ("hlt");
 }
