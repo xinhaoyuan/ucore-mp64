@@ -9,10 +9,11 @@ eproc_public_entry(void *__arg)
 	event_loop(PROC_TO_EVENT_POOL(proc_current));
 }
 
-static void
-ep_touch(event_pool_t pool)
+static int
+ep_touch(event_t event)
 {
-	proc_notify(EVENT_POOL_TO_PROC(pool));
+	proc_notify(EVENT_POOL_TO_PROC(event->pool));
+	return 0;
 }
 
 static void

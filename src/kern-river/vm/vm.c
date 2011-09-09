@@ -1,4 +1,5 @@
 #include <vm/vm.h>
+#include <vm/vm_dev.h>
 
 #include <palacios/vmm.h>
 #include <palacios/vmm_io.h>
@@ -226,7 +227,7 @@ static struct v3_os_hooks os_hooks =
 };
 
 static struct guest_info *vm_info;
-
+static void  *callback_buf;
 int
 vm_init(void)
 {
@@ -234,7 +235,8 @@ vm_init(void)
 
 	extern char _binary_vm_image_start[];
 	vm_info = v3_create_vm((void *)_binary_vm_image_start);
-
+	callback_buf = vm_dev_init(vm_info, 64);
+	
 	if (!vm_info)
 	{
 		return -1;

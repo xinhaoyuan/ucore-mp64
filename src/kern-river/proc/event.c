@@ -11,19 +11,19 @@ PLS event_pool_s global_pool;
 
 void
 event_pool_init(event_pool_t pool,
-				event_pool_handler_f remote_touch,
-				event_pool_handler_f local_exhaust,
-				event_pool_handler_f local_stop)
+				event_pool_touch_f   touch,
+				event_pool_handler_f exhaust,
+				event_pool_handler_f stop)
 {
 	if (pool == NULL)
 		pool = &global_pool;
 
 	pool->head = pool->tail = NULL;
 
-	pool->remote_touch = remote_touch;
-	pool->local_exhaust = local_exhaust;
-	pool->stop = 0;
-	pool->local_stop = local_stop;
+	pool->touch = touch;
+	pool->exhaust = exhaust;
+	pool->to_stop = 0;
+	pool->stop = stop;
 }
 
 void
@@ -42,31 +42,33 @@ int
 event_activate(event_t event)
 {
 	local_irq_save();
-
-	switch (event->status)
-	{
-	case EVENT_STATUS_WAIT:
-	{
-		event->status = EVENT_STATUS_QUEUE;
-		event->next   = NULL;
-		event_pool_t pool = event->pool;
-		if (pool->tail == NULL)
-		{
-			pool->head = pool->tail = event;
-			pool->remote_touch(pool);
-		}
-		else
-		{
-			pool->tail->next = event;
-			pool->tail = event;
-		}
-
-		break;
-	}
 	
-	case EVENT_STATUS_QUEUE:
-		event->status = EVENT_STATUS_QUEUE_STRONG;
-		break;
+	event_pool_t pool = event->pool;
+	if (pool->touch(event) == 0)
+	{
+		switch (event->status)
+		{
+		case EVENT_STATUS_WAIT:
+		{
+			event->status = EVENT_STATUS_QUEUE;
+			event->next   = NULL;
+			if (pool->tail == NULL)
+			{
+				pool->head = pool->tail = event;
+			}
+			else
+			{
+				pool->tail->next = event;
+				pool->tail = event;
+			}
+			
+			break;
+		}
+		
+		case EVENT_STATUS_QUEUE:
+			event->status = EVENT_STATUS_QUEUE_STRONG;
+			break;
+		}
 	}
 	
 	local_irq_restore();
@@ -85,7 +87,7 @@ event_loop(event_pool_t pool)
 		local_irq_save();
 		if (pool->head == NULL)
 		{
-			if (pool->stop)
+			if (pool->to_stop)
 			{
 				local_irq_restore();
 				break;
@@ -127,10 +129,10 @@ event_loop(event_pool_t pool)
 
 		if (event)
 			event->handler(event);
-		else pool->local_exhaust(pool);
+		else pool->exhaust(pool);
 	}
 
-	pool->local_stop(pool);
+	pool->stop(pool);
 }
 
 void
@@ -139,5 +141,5 @@ event_loop_stop(event_pool_t pool)
 	if (pool == NULL)
 		pool = &global_pool;
 	/* Need not irq disabled */
-	pool->stop = 1;
+	pool->to_stop = 1;
 }
