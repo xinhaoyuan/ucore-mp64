@@ -16,6 +16,7 @@
 #include <wait.h>
 #include <sync.h>
 #include <kio.h>
+#include <mp.h>
 
 /* ------------- swap in/out & page replacement mechanism design&implementation -------------
 Hardware Requrirement:

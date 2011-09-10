@@ -100,8 +100,8 @@ struct proc_struct {
 #define le2proc(le, member)         \
     to_struct((le), struct proc_struct, member)
 
-extern struct proc_struct * volatile current;
-extern struct proc_struct * volatile idleproc;
+extern struct proc_struct *current;
+extern struct proc_struct *idleproc;
 extern struct proc_struct *initproc;
 extern struct proc_struct *kswapd;
 

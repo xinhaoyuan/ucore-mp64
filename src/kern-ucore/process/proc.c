@@ -69,8 +69,8 @@ SYS_getpid      : get the process's pid
 
 */
 
-PLS struct proc_struct * volatile current;
-PLS struct proc_struct * volatile idleproc;
+PLS struct proc_struct *current;
+PLS struct proc_struct *idleproc;
 struct proc_struct *initproc;
 struct proc_struct *kswapd;
 
@@ -209,7 +209,7 @@ proc_run(struct proc_struct *proc) {
     if (proc != current) {
         bool intr_flag;
         struct proc_struct *prev = current, *next = proc;
-		kprintf("(%d) => %d\n", lapic_id, next->pid);
+		// kprintf("(%d) => %d\n", lapic_id, next->pid);
         local_intr_save(intr_flag);
         {
             current = proc;
