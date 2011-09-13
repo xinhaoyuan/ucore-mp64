@@ -39,6 +39,7 @@ static struct taskstate ts[LAPIC_COUNT] = {0};
 struct Page *pages;
 // amount of physical memory (in pages)
 size_t npage = 0;
+static uintptr_t freemem;
 
 // virtual address of boot-time page directory
 pgd_t *boot_pgdir = NULL;
@@ -193,7 +194,7 @@ nr_free_pages(void) {
 /* pmm_init - initialize the physical memory management */
 static void
 page_init(void) {
-    struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);
+    struct e820map *memmap = (struct e820map *)(0x8000 + PHYSBASE);
     uint64_t maxpa = 0;
 
 	memmap_reset();
@@ -202,41 +203,53 @@ page_init(void) {
     int i;
     for (i = 0; i < memmap->nr_map; i ++) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
+		
+		if (end <= RESERVED_DRIVER_OS_SIZE)
+			continue;
+		if (begin < RESERVED_DRIVER_OS_SIZE)
+			begin = RESERVED_DRIVER_OS_SIZE;
+		
         cprintf("  memory: %016llx, [%016llx, %016llx], type = %d.\n",
                 memmap->map[i].size, begin, end - 1, memmap->map[i].type);
 
 		memmap_append(begin, end, memmap->map[i].type);
 
         if (memmap->map[i].type == E820_ARM) {
-            if (maxpa < end && begin < KMEMSIZE) {
+            if (maxpa < end && begin < SVSIZE) {
                 maxpa = end;
             }
         }
     }
-    if (maxpa > KMEMSIZE) {
-        maxpa = KMEMSIZE;
+    if (maxpa > SVSIZE) {
+        maxpa = SVSIZE;
     }
 
-	memmap_process(0);
+	memmap_process(1);
     extern char __end[];
 
-    npage = maxpa / PGSIZE;
-    pages = (struct Page *)ROUNDUP(KADDR((uintptr_t)__end), PGSIZE);
+    npage = (maxpa - RESERVED_DRIVER_OS_SIZE) / PGSIZE;
+    pages = (struct Page *)ROUNDUP((uintptr_t)__end + SVBASE, PGSIZE);
 
     for (i = 0; i < npage; i ++) {
         SetPageReserved(pages + i);
     }
 
-    uintptr_t freemem = PADDR((uintptr_t)pages + sizeof(struct Page) * npage);
+    freemem = ROUNDUP((uintptr_t)pages + sizeof(struct Page) * npage - SVBASE, PGSIZE);
 
     for (i = 0; i < memmap->nr_map; i ++) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
+
+		if (end <= RESERVED_DRIVER_OS_SIZE)
+			continue;
+		if (begin < RESERVED_DRIVER_OS_SIZE)
+			begin = RESERVED_DRIVER_OS_SIZE;
+		
         if (memmap->map[i].type == E820_ARM) {
             if (begin < freemem) {
                 begin = freemem;
             }
-            if (end > KMEMSIZE) {
-                end = KMEMSIZE;
+            if (end > SVSIZE) {
+                end = SVSIZE;
             }
             if (begin < end) {
                 begin = ROUNDUP(begin, PGSIZE);
@@ -271,7 +284,7 @@ boot_alloc_page(void) {
     if (p == NULL) {
         panic("boot_alloc_page failed.\n");
     }
-    return page2kva(p);
+    return page2va(p);
 }
 
 //pmm_init - setup a pmm to manage physical memory, build PDT&PT to setup paging mechanism 
@@ -295,26 +308,33 @@ pmm_init(void) {
     // create boot_pgdir, an initial page directory(Page Directory Table, PDT)
     boot_pgdir = boot_alloc_page();
     memset(boot_pgdir, 0, PGSIZE);
-    boot_cr3 = PADDR(boot_pgdir);
+    boot_cr3 = PADDR_DIRECT(boot_pgdir);
 
-    static_assert(KERNBASE % PUSIZE == 0 && KERNTOP % PUSIZE == 0);
+    static_assert(SVBASE % PUSIZE == 0 && SVTOP % PUSIZE == 0);
 
     // recursively insert boot_pgdir in itself
     // to form a virtual page table at virtual address VPT
-    boot_pgdir[PGX(VPT)] = PADDR(boot_pgdir) | PTE_P | PTE_W;
+    boot_pgdir[PGX(VPT)] = PADDR_DIRECT(boot_pgdir) | PTE_P | PTE_W;
 
-    /* // map all physical memory at KERNBASE */
-    boot_map_segment(boot_pgdir, KERNBASE, npage * PGSIZE, 0, PTE_W);
+    // map all physical memory at KERNBASE
+    boot_map_segment(boot_pgdir, PHYSBASE, RESERVED_DRIVER_OS_SIZE + npage * PGSIZE, 0, PTE_W);
+	
+	extern char __sv_start[];
+	uintptr_t   sv_start = (uintptr_t)__sv_start;
+	uintptr_t   sv_space = page2pa(alloc_pages((freemem - sv_start) / PGSIZE));	
+	boot_map_segment(boot_pgdir, SVBASE + sv_start, freemem - sv_start, sv_space, PTE_W);
+	memmove(VADDR_DIRECT(sv_space), (void *)(SVBASE + sv_start), freemem - sv_start);
+
     lcr3(boot_cr3);
 
 	/* patched by xinhaoyuan: to fix the unmapped space when reading ACPI */
 	/* configuration table under X86-64 */
-    struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);
+    struct e820map *memmap = (struct e820map *)(0x8000 + PHYSBASE);
     int i;
     for (i = 0; i < memmap->nr_map; i ++) {
 		if (memmap->map[i].type != 1)
 		{
-			boot_map_segment(boot_pgdir, memmap->map[i].addr + KERNBASE, memmap->map[i].size, memmap->map[i].addr, PTE_W);
+			boot_map_segment(boot_pgdir, memmap->map[i].addr + PHYSBASE, memmap->map[i].size, memmap->map[i].addr, PTE_W);
 		}
     }
 	/* and map the first 1MB for the ap booting */
@@ -353,10 +373,10 @@ get_pud(pgd_t *pgdir, uintptr_t la, bool create) {
         }
         set_page_ref(page, 1);
         uintptr_t pa = page2pa(page);
-        memset(KADDR(pa), 0, PGSIZE);
+        memset(VADDR_DIRECT(pa), 0, PGSIZE);
         *pgdp = pa | PTE_U | PTE_W | PTE_P;
     }
-    return &((pud_t *)KADDR(PGD_ADDR(*pgdp)))[PUX(la)];
+    return &((pud_t *)VADDR_DIRECT(PGD_ADDR(*pgdp)))[PUX(la)];
 }
 
 pmd_t *
@@ -372,10 +392,10 @@ get_pmd(pgd_t *pgdir, uintptr_t la, bool create) {
         }
         set_page_ref(page, 1);
         uintptr_t pa = page2pa(page);
-        memset(KADDR(pa), 0, PGSIZE);
+        memset(VADDR_DIRECT(pa), 0, PGSIZE);
         *pudp = pa | PTE_U | PTE_W | PTE_P;
     }
-    return &((pmd_t *)KADDR(PUD_ADDR(*pudp)))[PMX(la)];
+    return &((pmd_t *)VADDR_DIRECT(PUD_ADDR(*pudp)))[PMX(la)];
 }
 
 pte_t *
@@ -392,11 +412,11 @@ get_pte(pgd_t *pgdir, uintptr_t la, bool create) {
         }
         set_page_ref(page, 1);
         uintptr_t pa = page2pa(page);
-        memset(KADDR(pa), 0, PGSIZE);
+        memset(VADDR_DIRECT(pa), 0, PGSIZE);
         *pmdp = pa | PTE_U | PTE_W | PTE_P;
     }
 
-    return &((pte_t *)KADDR(PMD_ADDR(*pmdp)))[PTX(la)];
+    return &((pte_t *)VADDR_DIRECT(PMD_ADDR(*pmdp)))[PTX(la)];
 }
 
 struct Page *
@@ -456,7 +476,7 @@ page_insert(pgd_t *pgdir, struct Page *page, uintptr_t la, uint32_t perm) {
 // edited are the ones currently in use by the processor.
 void
 tlb_invalidate(pgd_t *pgdir, uintptr_t la) {
-    if (rcr3() == PADDR(pgdir)) {
+    if (rcr3() == PADDR_DIRECT(pgdir)) {
         invlpg((void *)la);
     }
 }
@@ -473,12 +493,12 @@ check_boot_pgdir(void) {
     pte_t *ptep;
     int i;
     for (i = 0; i < npage; i += PGSIZE) {
-        assert((ptep = get_pte(boot_pgdir, (uintptr_t)KADDR(i), 0)) != NULL);
+        assert((ptep = get_pte(boot_pgdir, (uintptr_t)VADDR_DIRECT(i), 0)) != NULL);
         assert(PTE_ADDR(*ptep) == i);
     }
     size_t nr_free_pages_saved = nr_free_pages();
 
-    assert(PUD_ADDR(boot_pgdir[PGX(VPT)]) == PADDR(boot_pgdir));
+    assert(PUD_ADDR(boot_pgdir[PGX(VPT)]) == PADDR_DIRECT(boot_pgdir));
 
     struct Page *p;
     p = alloc_page();
@@ -491,7 +511,7 @@ check_boot_pgdir(void) {
     strcpy((void *)0x100, str);
     assert(strcmp((void *)0x100, (void *)(0x100 + PGSIZE)) == 0);
 
-    *(char *)(page2kva(p) + 0x100) = '\0';
+    *(char *)(page2va(p) + 0x100) = '\0';
     assert(strlen((const char *)0x100) == 0);
 
     free_page(pa2page(PTE_ADDR(*get_pte(boot_pgdir, 0x100, 0))));

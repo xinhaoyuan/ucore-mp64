@@ -58,11 +58,11 @@ static uint16_t addr_6845;
 
 static void
 cga_init(void) {
-    volatile uint16_t *cp = (uint16_t *)(CGA_BUF + KERNBASE);
+    volatile uint16_t *cp = (uint16_t *)(CGA_BUF + PHYSBASE);
     uint16_t was = *cp;
     *cp = (uint16_t) 0xA55A;
     if (*cp != 0xA55A) {
-        cp = (uint16_t*)(MONO_BUF + KERNBASE);
+        cp = (uint16_t*)(MONO_BUF + PHYSBASE);
         addr_6845 = MONO_BASE;
     } else {
         *cp = was;

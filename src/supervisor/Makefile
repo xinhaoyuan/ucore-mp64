@@ -8,6 +8,6 @@ include ${T_BASE}/mk/template.mk
 
 all: ${T_OBJ}/supervisor
 
-${T_OBJ}/supervisor: ${OBJFILES} supervisor.ld
+${T_OBJ}/supervisor: ${OBJFILES} ${T_OBJ}/bzImage.o  supervisor.ld
 	@echo LD $@
-	${V}${LD} -T supervisor.ld -z max-page-size=0x1000 -o$@ $^ ${T_OBJ}/libs-sv-*.o
+	${V}${LD} -T supervisor.ld -z max-page-size=0x1000 -o$@ ${OBJFILES$} ${T_OBJ}/libs-sv-*.o ${T_OBJ}/bzImage.o 

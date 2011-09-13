@@ -17,7 +17,7 @@ void
 boot_alloc_init(void)
 {
 	bf_memmap = 0;
-	boot_free = (uintptr_t)DIRECT_KADDR(__end);
+	boot_free = (uintptr_t)VADDR_DIRECT(__end);
 
 	uintptr_t start, end;
 	while (memmap_enumerate(bf_memmap, &start, &end) == 0)
@@ -60,7 +60,7 @@ boot_alloc(uintptr_t size, uintptr_t align, int verbose)
      }
 
 	 ++ boot_free;
-     void *result = DIRECT_KADDR(boot_free);
+     void *result = VADDR_DIRECT(boot_free);
 	 
      if (verbose)
 		  cprintf("[init_alloc] result = %p\n", result);

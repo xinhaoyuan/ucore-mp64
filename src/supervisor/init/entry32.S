@@ -44,6 +44,7 @@ sv_entry32:
     orl $0x3, %eax
     movl %eax, (%edi)
     movl %eax, 0x800(%edi)
+	movl %eax, 0x900(%edi)
 
     # clear and set pud, mark pmd as (PTE_W | PTE_P)
     movl $pud, %edi
@@ -107,8 +108,8 @@ longmode_entry:
     mov %ax, %ss
 
     # Jump to kern_entry64
-    movq $KERNBASE, %rax
-    addq $kern_entry64 - KERNBASE, %rax
+    movq $SVBASE, %rax
+    addq $kern_entry64 - SVBASE, %rax
     jmp *%rax
 
 .data

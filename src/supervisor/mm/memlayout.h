@@ -31,13 +31,15 @@
  *
  *     4G x 4G -------------> +---------------------------------+
  *                            |                                 |
- *                            |         Empty Memory (*)        |
+ *                            |         Invalid Memory (*)      |
  *                            |                                 |
- *                            +---------------------------------+ 0xFFFFA00000000000
+ *                            +---------------------------------+ 0xFFFFD08000000000
  *                            |   Cur. Page Table (Kern, RW)    | RW/-- PUSIZE
- *     VPT -----------------> +---------------------------------+ 0xFFFF9F8000000000
- *                            |        Invalid Memory (*)       | --/--
- *     KERNTOP -------------> +---------------------------------+ 0xFFFF900000000000
+ *     VPT -----------------> +---------------------------------+ 0xFFFFD00000000000
+ *                            |                                 |
+ *                            |  Linear Mapping of Physical Mem | RW/-- PHYSSIZE
+ *                            |                                 |
+ *     KERNTOP, PHYSBASE ---> +---------------------------------+ 0xFFFF900000000000
  *                            |                                 |
  *                            |    Remapped Physical Memory     | RW/-- KMEMSIZE
  *                            |                                 |
@@ -52,10 +54,16 @@
  *
  * */
 
+#define SVBASE              0xFFFF800000000000
+#define SVSIZE              0x0000100000000000          // the maximum amount of kern remapped memory
+#define SVTOP               (SVBASE + SVSIZE)
+
 /* All physical memory mapped at this address */
-#define KERNBASE            0xFFFF800000000000
-#define KMEMSIZE            0x0000100000000000          // the maximum amount of physical memory
-#define KERNTOP             (KERNBASE + KMEMSIZE)
+#define PHYSBASE            0xFFFF900000000000
+#define PHYSSIZE            0x0000400000000000          // the maximum amount of physical memory
+
+/* RESERVED MEMORY FOR DRIVER OS */
+#define RESERVED_DRIVER_OS_SIZE 0x10000000
 
 /* *
  * * Virtual page table. Entry PGX[VPT] in the PGD (Page Global Directory) contains
@@ -63,7 +71,7 @@
  * table, which maps all the PUEs (Page Upper Directory Table Entry) containing
  * the page mappings for the entire virtual address space into that region starting at VPT.
  * */
-#define VPT                 0xFFFF9F8000000000
+#define VPT                 0xFFFFD00000000000
 
 #define KSTACKPAGE          4                           // # of pages in kernel stack
 #define KSTACKSIZE          (KSTACKPAGE * PGSIZE)       // sizeof kernel stack

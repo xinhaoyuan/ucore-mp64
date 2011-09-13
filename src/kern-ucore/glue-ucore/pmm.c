@@ -8,9 +8,10 @@
 #include <swap.h>
 #include <glue_mp.h>
 #include <glue_intr.h>
+#include <mp.h>
 
-PLS static size_t volatile used_pages;
-PLS list_entry_t volatile page_struct_free_list;
+PLS static size_t used_pages;
+PLS list_entry_t page_struct_free_list;
 
 static struct Page *
 page_struct_alloc(uintptr_t pa)

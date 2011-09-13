@@ -48,43 +48,24 @@ void tlb_invalidate(pgd_t *pgdir, uintptr_t la);
 
 void print_pgdir(void);
 
-/* *
- * PADDR - takes a kernel virtual address (an address that points above KERNBASE),
- * where the machine's maximum 256MB of physical memory is mapped and returns the
- * corresponding physical address.  It panics if you pass it a non-kernel virtual address.
- * */
-#define PADDR(kva) ({                                                   \
-            uintptr_t __m_kva = (uintptr_t)(kva);                       \
-            if (__m_kva < KERNBASE) {                                   \
-                panic("PADDR called with invalid kva %08lx", __m_kva);  \
-            }                                                           \
-            __m_kva - KERNBASE;                                         \
-        })
-
-/* *
- * KADDR - takes a physical address and returns the corresponding kernel virtual
- * address. It panics if you pass an invalid physical address.
- * */
-#define KADDR(pa) ({                                                    \
-            uintptr_t __m_pa = (pa);                                    \
-            size_t __m_ppn = PPN(__m_pa);                               \
-            if (__m_ppn >= npage) {                                     \
-                panic("KADDR called with invalid pa %08lx", __m_pa);    \
-            }                                                           \
-            (void *) (__m_pa + KERNBASE);                               \
-        })
 
 /* Simply translate between VA and PA without checking */
-#define DIRECT_KADDR(addr) ((void*)((uintptr_t)(addr) + KERNBASE))
-#define DIRECT_PADDR(addr) ((uintptr_t)(addr) - KERNBASE)
+#define VADDR_DIRECT(addr) ((void*)((uintptr_t)(addr) + PHYSBASE))
+#define PADDR_DIRECT(addr) ((uintptr_t)(addr) - PHYSBASE)
 
 
 extern struct Page *pages;
 extern size_t npage;
 
 static inline ppn_t
+page2gidx(struct Page *page)
+{
+	return page - pages;
+}
+
+static inline ppn_t
 page2ppn(struct Page *page) {
-    return page - pages;
+    return page2gidx(page) + (RESERVED_DRIVER_OS_SIZE / PGSIZE);
 }
 
 static inline uintptr_t
@@ -94,20 +75,20 @@ page2pa(struct Page *page) {
 
 static inline struct Page *
 pa2page(uintptr_t pa) {
-    if (PPN(pa) >= npage) {
+    if (PPN(pa - RESERVED_DRIVER_OS_SIZE) >= npage) {
         panic("pa2page called with invalid pa");
     }
-    return &pages[PPN(pa)];
+    return &pages[PPN(pa - RESERVED_DRIVER_OS_SIZE)];
 }
 
 static inline void *
-page2kva(struct Page *page) {
-    return KADDR(page2pa(page));
+page2va(struct Page *page) {
+    return VADDR_DIRECT(page2pa(page));
 }
 
 static inline struct Page *
-kva2page(void *kva) {
-    return pa2page(PADDR(kva));
+va2page(void *va) {
+    return pa2page(PADDR_DIRECT(va));
 }
 
 static inline struct Page *

@@ -134,15 +134,15 @@ acpi_rsdp_search(void)
 	struct acpi_rsdp_s *rsdp;
 	uint64_t x;
 	/* see ACPI SPEC for details */
-	bda = (uint8_t *)DIRECT_KADDR(BDA);
+	bda = (uint8_t *)VADDR_DIRECT(BDA);
 	x = ((bda[0x0F] << 8) | bda[0x0E]) << 4;
-	p = (uintptr_t)DIRECT_KADDR(x);
+	p = (uintptr_t)VADDR_DIRECT(x);
 	if (p)
 	{
 		if ((rsdp = acpi_rsdp_search_segment((uint8_t *)p, 1024, 0xf, 1)))
 			return rsdp;
 	}
-	return acpi_rsdp_search_segment((uint8_t *)DIRECT_KADDR(0xE0000), 0x20000, 0xf, 1);
+	return acpi_rsdp_search_segment((uint8_t *)VADDR_DIRECT(0xE0000), 0x20000, 0xf, 1);
 }
 
 int
@@ -160,7 +160,7 @@ acpi_conf_init(void)
 	sysconf.has_hpet = 0;
 
 	int xsdp = (rsdp->revision != 0) ? 1 : 0;
-	struct acpi_sdth_s *sdt = (struct acpi_sdth_s *)DIRECT_KADDR(xsdp ? rsdp->xsdt_phys : rsdp->rsdt_phys);
+	struct acpi_sdth_s *sdt = (struct acpi_sdth_s *)VADDR_DIRECT(xsdp ? rsdp->xsdt_phys : rsdp->rsdt_phys);
 	int n = (sdt->length  - sizeof(struct acpi_sdth_s)) / (xsdp ? 8 : 4);
 
 	char sign[5];
@@ -172,7 +172,7 @@ acpi_conf_init(void)
 		if (xsdp)
 			phys = *(uint64_t *)((uintptr_t)(sdt + 1) + (i << (xsdp ? 3 : 2)));
 		else phys = *(uint32_t *)((uintptr_t)(sdt + 1) + (i << (xsdp ? 3 : 2)));
-		struct acpi_sdth_s *cur = (struct acpi_sdth_s *)DIRECT_KADDR(phys);
+		struct acpi_sdth_s *cur = (struct acpi_sdth_s *)VADDR_DIRECT(phys);
 		memmove(sign, (char *)&cur->signature, 4);
 		cprintf("Processing %s\n", sign);
 		if (memcmp(cur->signature, "APIC", 4) == 0)
@@ -182,7 +182,7 @@ acpi_conf_init(void)
 			sysconf.lapic_phys = madt->lapic_phys;
 
 			uintptr_t phys_base = sysconf.lapic_phys & ~(uintptr_t)(PGSIZE - 1);
-			*get_pte(boot_pgdir, (uintptr_t)DIRECT_KADDR(phys_base), 1) =
+			*get_pte(boot_pgdir, (uintptr_t)VADDR_DIRECT(phys_base), 1) =
 				phys_base | PTE_P | PTE_W;
 
 			char *apic_cur = (char *)(madt + 1);
@@ -212,7 +212,7 @@ acpi_conf_init(void)
 					ioapic[sysconf.ioapic_count].intr_base = desc->ioapic.intr_base;
 
 					phys_base = desc->ioapic.phys & ~(uintptr_t)(PGSIZE - 1);
-					*get_pte(boot_pgdir, (uintptr_t)DIRECT_KADDR(phys_base), 1) =
+					*get_pte(boot_pgdir, (uintptr_t)VADDR_DIRECT(phys_base), 1) =
 						phys_base | PTE_P | PTE_W;
 					
 					++ sysconf.ioapic_count;

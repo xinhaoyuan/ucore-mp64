@@ -133,7 +133,7 @@ buddy_alloc_pages(size_t n) {
 //              -  be in the continuous page block whose size is 2^order pages?
 static inline bool
 page_is_buddy(struct Page *page, size_t order, int zone_num) {
-    if (page2ppn(page) < npage) {
+    if (page2gidx(page) < npage) {
         if (page->zone_num == zone_num) {
             return !PageReserved(page) && PageProperty(page) && page->property == order;
         }

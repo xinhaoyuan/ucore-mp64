@@ -25,8 +25,10 @@
 #define USER_DS     ((GD_UDATA) | DPL_USER)
 
 /* All physical memory mapped at this address */
-#define PBASE            0xFFFF800000000000
-#define PSIZE            0x0000100000000000          // the maximum amount of physical memory
+#define PBASE            0xFFFF900000000000
+#define PSIZE            0x0000400000000000          // the maximum amount of physical memory
+
+#define KBASE            0xFFFF800000000000
 
 #define KERNBASE         0xFFFFFFFF80000000
 
@@ -36,7 +38,7 @@
  * table, which maps all the PUEs (Page Upper Directory Table Entry) containing
  * the page mappings for the entire virtual address space into that region starting at VPT.
  * */
-#define VPT                 0xFFFF9F8000000000
+#define VPT                 0xFFFFD00000000000
 #define VPT_ENTRY(ADDR)     ((pte_t *)(VPT + (((uintptr_t)(ADDR) & 0xFFFFFFFFF000) >> 9)))
 
 #define KSTACKPAGE          4                           // # of pages in kernel stack

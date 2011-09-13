@@ -1,7 +1,7 @@
 .PHONY: all
 
-OFILELIST = libv3vee.a
-TFILELIST = $(addprefix ${T_OBJ}/,${OFILELIST} vm_image.o)
+OFILELIST = 
+TFILELIST = $(addprefix ${T_OBJ}/,${OFILELIST} bzImage.o)
 
 include ${T_BASE}/mk/compk.mk
 
@@ -11,7 +11,7 @@ ${T_OBJ}/%: %
 	@echo CP $@
 	${V}cp $< $@
 
-${T_OBJ}/vm_image.o: vm_image
+${T_OBJ}/bzImage.o: bzImage
 	@echo OBJCOPY $@
 	${V}${OBJCOPY} -I binary -O elf64-x86-64 -B "i386:x86-64" $< $@
 

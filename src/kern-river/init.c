@@ -12,7 +12,6 @@
 #include <drivers/rand.h>
 #include <drivers/pci.h>
 #include <proc/eproc.h>
-#include <vm/vm.h>
 
 PLS static event_s __init_event;
 PLS static eproc_s init_eproc;
@@ -44,12 +43,6 @@ do_init(event_t e)
 	/* For each processor, the init event is activated to do
 	 * initializations of system services when all system components are
 	 * ready */
-
-	if (lcpu_idx == mpconf_main_lcpu_idx)
-	{
-		vm_init();
-		vm_start();
-	}
 
 	/* ipe init here is also an all lcpu barrier */
 	ipe_init();

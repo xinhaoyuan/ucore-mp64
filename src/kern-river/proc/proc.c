@@ -6,6 +6,7 @@
 #include <libs/string.h>
 #include <proc/ipe.h>
 #include <init.h>
+#include <debug/io.h>
 
 #define SCHED_NODE_TO_PROC(sch)											\
 	((proc_t)((char *)(sch) - (uintptr_t)(&((proc_t)0)->sched_node)))
@@ -62,7 +63,7 @@ static void
 proc_public_entry(void *__arg)
 {
 	proc_current->entry(__arg);
-	/* XXX proc exit */
+	kprintf("proc %s ends.\n", proc_current->name);
 }
 
 int

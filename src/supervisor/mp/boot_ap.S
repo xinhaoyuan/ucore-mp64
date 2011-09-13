@@ -75,7 +75,7 @@ longmode_entry:
 
 		// GET THE APIC ID
 		movq BOOT_AP_LAPIC_PHYS, %rbx
-		movq $KERNBASE, %rax
+		movq $PHYSBASE, %rax
 		addq %rax, %rbx
 		movl 0x20(%rbx), %eax
 		// Tricky to get the stack address
@@ -86,19 +86,19 @@ longmode_entry:
 		movq $0, %rbp
 		movq %rax, %rsp
 
-		movq $KERNBASE, %rax
-		addq $(ap_boot_init - KERNBASE), %rax
+		movq $SVBASE, %rax
+		addq $(ap_boot_init - SVBASE), %rax
 		call *%rax
 
 ap_spin:
 		jmp ap_spin
 
+.align 4
+		
 idt:
 		.word 0
 		.quad 0
 
-.data
-.align 4
 boot_ap_gdt:
     SEG_NULL()
     SEG_CODE(STA_X | STA_R)
@@ -109,3 +109,17 @@ boot_ap_gdtdesc:
     .quad boot_ap_gdt
 
  
+		.align 4096
+		.global __boot_dos_entry
+		.code16
+__boot_dos_entry:
+		movw $0x1000, %ax
+		movw %ax, %ds
+		movw %ax, %es
+		movw %ax, %ss
+		movw %ax, %fs
+		movw %ax, %gs
+		movw $0xe000, %ax
+		movw %ax, %sp
+		ljmp $0x1020, $0x0000
+		

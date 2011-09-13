@@ -35,7 +35,7 @@ load_kern(void)
 {
 	ide_read_secs(0, 1, &kern_bootinfo, PGSIZE / SECTSIZE);
 	uintptr_t kern_data_size = kern_bootinfo.kern_bss - kern_bootinfo.kern_text;
-	kern_data = page2kva(alloc_pages(kern_data_size / PGSIZE));
+	kern_data = page2va(alloc_pages(kern_data_size / PGSIZE));
 	read_secs(
 		0,
 		1 + (kern_bootinfo.kern_text - kern_bootinfo.kern_start) / SECTSIZE,
@@ -44,10 +44,10 @@ load_kern(void)
 	
 	kern_share = page2pa(alloc_pages((kern_bootinfo.kern_end - kern_bootinfo.kern_data) / PGSIZE));
 		
-	memmove((char *)KADDR(kern_share),
+	memmove((char *)VADDR_DIRECT(kern_share),
 			kern_data + kern_bootinfo.kern_data - kern_bootinfo.kern_text,
 			kern_bootinfo.kern_bss - kern_bootinfo.kern_data);
-	memset((char *)KADDR(kern_share) + kern_bootinfo.kern_bss - kern_bootinfo.kern_data,
+	memset((char *)VADDR_DIRECT(kern_share) + kern_bootinfo.kern_bss - kern_bootinfo.kern_data,
 		   0, kern_bootinfo.kern_end - kern_bootinfo.kern_bss);
 }
 
@@ -55,11 +55,11 @@ void
 jump_kern(void)
 {
 	pgd_t *pgdir;
-	pgdir = lcpu_static[lapic_id()].init_pgdir = (pgd_t *)page2kva(alloc_page());
+	pgdir = lcpu_static[lapic_id()].init_pgdir = (pgd_t *)page2va(alloc_page());
 	memcpy(pgdir, boot_pgdir, PGSIZE);
 
 	pgdir[0]        = 0;
-	pgdir[PGX(VPT)] = PADDR(pgdir) | PTE_P | PTE_W;
+	pgdir[PGX(VPT)] = PADDR_DIRECT(pgdir) | PTE_P | PTE_W;
 
 	uintptr_t i;
 	for (i = kern_bootinfo.kern_text; i < kern_bootinfo.kern_end; i += PGSIZE)
@@ -68,7 +68,7 @@ jump_kern(void)
 		if (i < kern_bootinfo.kern_pls)
 		{
 			/* map all readonly data */
-			*pte = PADDR(kern_data + i - kern_bootinfo.kern_text) | PTE_P;
+			*pte = PADDR_DIRECT(kern_data + i - kern_bootinfo.kern_text) | PTE_P;
 		}
 		else if (i < kern_bootinfo.kern_data)
 		{
@@ -82,7 +82,7 @@ jump_kern(void)
 		}
 	}		
 
-	lcr3(PADDR(pgdir));
+	lcr3(PADDR_DIRECT(pgdir));
 	/* Setup cr0 protection */
 	uint64_t cr0 = rcr0();
     cr0 |= CR0_PE | CR0_PG | CR0_AM | CR0_WP | CR0_NE | CR0_TS | CR0_EM | CR0_MP;

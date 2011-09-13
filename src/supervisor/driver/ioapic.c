@@ -64,7 +64,7 @@ ioapic_init(void)
 		ioapic_id = ioapic_id_set[i];
 
 		// cprintf("IOAPIC %d phys %08x\n", ioapic_id, ioapic[ioapic_id].phys);
-		ioapic_mmio = (ioapic_mmio_s *)DIRECT_KADDR(ioapic[ioapic_id].phys);
+		ioapic_mmio = (ioapic_mmio_s *)VADDR_DIRECT(ioapic[ioapic_id].phys);
 
 		int v = ioapic_read(ioapic_mmio, REG_VER);
 		maxintr = (v >> 16) & 0xFF;
@@ -114,14 +114,14 @@ ioapic_init(void)
 void
 ioapic_send_eoi(int apic_id, int irq)
 {
-	ioapic_mmio_s *ioapic_mmio = (ioapic_mmio_s *)DIRECT_KADDR(ioapic[apic_id].phys);
+	ioapic_mmio_s *ioapic_mmio = (ioapic_mmio_s *)VADDR_DIRECT(ioapic[apic_id].phys);
 	ioapic_mmio->eoi = irq & 0xFF;
 }
 
 void
 ioapic_enable(int apic_id, int irq, int cpunum)
 {
-	ioapic_mmio_s *ioapic_mmio = (ioapic_mmio_s *)DIRECT_KADDR(ioapic[apic_id].phys);
+	ioapic_mmio_s *ioapic_mmio = (ioapic_mmio_s *)VADDR_DIRECT(ioapic[apic_id].phys);
 	// Mark interrupt edge-triggered, active high,
 	// enabled, and routed to the given cpunum,
 	// which happens to be that cpu's APIC ID.
@@ -132,7 +132,7 @@ ioapic_enable(int apic_id, int irq, int cpunum)
 void
 ioapic_disable(int apic_id, int irq)
 {
-	ioapic_mmio_s *ioapic_mmio = (ioapic_mmio_s *)DIRECT_KADDR(ioapic[apic_id].phys);
+	ioapic_mmio_s *ioapic_mmio = (ioapic_mmio_s *)VADDR_DIRECT(ioapic[apic_id].phys);
 	// Mark interrupt edge-triggered, active high,
 	// enabled, and routed to the given cpunum,
 	// which happens to be that cpu's APIC ID.

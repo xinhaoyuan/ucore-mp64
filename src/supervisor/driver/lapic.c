@@ -40,14 +40,14 @@
 static uint32_t
 lapicr(int index)
 {
-	return ((volatile uint32_t *)DIRECT_KADDR(sysconf.lapic_phys))[index];
+	return ((volatile uint32_t *)VADDR_DIRECT(sysconf.lapic_phys))[index];
 }
 
 static uint32_t
 lapicw(int index, uint32_t value)
 {
-	((volatile uint32_t *)DIRECT_KADDR(sysconf.lapic_phys))[index] = value;
-	return ((volatile uint32_t *)DIRECT_KADDR(sysconf.lapic_phys))[ID];
+	((volatile uint32_t *)VADDR_DIRECT(sysconf.lapic_phys))[index] = value;
+	return ((volatile uint32_t *)VADDR_DIRECT(sysconf.lapic_phys))[ID];
 }
 
 int
@@ -188,7 +188,7 @@ lapic_ap_start(int apicid, uint32_t addr)
 	// the AP startup code prior to the [universal startup algorithm]."
 	outb(IO_RTC, 0xF);  // offset 0xF is shutdown code
 	outb(IO_RTC+1, 0x0A);
-	wrv = DIRECT_KADDR(0x40 << 4 | 0x67);
+	wrv = VADDR_DIRECT(0x40 << 4 | 0x67);
 	wrv[0] = addr & 0xffff;
 	wrv[1] = (addr ^ wrv[0]) >> 4;
 
