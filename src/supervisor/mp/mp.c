@@ -7,6 +7,7 @@
 #include <trap.h>
 #include <lapic.h>
 #include <memlayout.h>
+#include <stdio.h>
 
 /* Provided by link script */
 extern char boot_ap_entry_64[];
@@ -110,7 +111,13 @@ mp_init(void)
 	
 	memmove(VADDR_DIRECT(0x8000), (void *)boot_dos_entry, 0x8000);
 	memmove(VADDR_DIRECT(0x10000), _binary_bzImage_start, 0x8000);
-	strcpy(VADDR_DIRECT(0x1e000), "mem=%dM", RESERVED_DRIVER_OS_SIZE >> 20);
+	
+#define CMDLINE_SIZE 80
+	char cmdline[CMDLINE_SIZE];
+	snprintf(cmdline, CMDLINE_SIZE, "nosmp mem=%dM", RESERVED_DRIVER_OS_SIZE >> 20);
+	cmdline[CMDLINE_SIZE - 1] = 0;	
+	strcpy(VADDR_DIRECT(0x1e000), cmdline);
+	
 	hdr = (void *)0x101F1;
 	hdr->type_of_loader = 0xFF;
 	hdr->loadflags = LOADED_HIGH | CAN_USE_HEAP;
@@ -155,6 +162,6 @@ ap_boot_init(void)
 	ltr(GD_TSS(lapic_id()));
 	lidt(&idt_pd);
 	lapic_init_ap();
-
+	
 	lcpu_init();
 }

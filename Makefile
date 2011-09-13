@@ -6,6 +6,14 @@ export T_OBJ    ?= ${PWD}/obj
 export MAKE     := make -s
 QEMU            ?= qemu-system-x86_64
 
+export BRANCH   ?= ucore
+HAS_DRIVER_OS   ?= n
+ifneq (${HAS_DRIVER_OS},n)
+override HAS_DRIVER_OS := y
+endif
+
+
+
 all: ${T_OBJ}
 	${V}${MAKE} -f mk/mods.mk all
 	${V}${MAKE} -f mk/image.mk all
