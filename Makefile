@@ -1,18 +1,18 @@
 .PHONY: all clean qemu
 
+-include config.mk
+
 export V        ?= @
 export T_BASE   ?= ${PWD}
 export T_OBJ    ?= ${PWD}/obj
 export MAKE     := make -s
 QEMU            ?= qemu-system-x86_64
-
 export BRANCH   ?= ucore
 HAS_DRIVER_OS   ?= n
 ifneq (${HAS_DRIVER_OS},n)
 override HAS_DRIVER_OS := y
 endif
-
-
+export HAS_DRIVER_OS
 
 all: ${T_OBJ}
 	${V}${MAKE} -f mk/mods.mk all
