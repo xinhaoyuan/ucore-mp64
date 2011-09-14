@@ -37,6 +37,14 @@ ping_packet_back_handler(ipe_packet_t packet)
 
 #endif
 
+static timer_s t;
+
+static void
+test_driver_os(event_t event)
+{
+	driver_os_notify();
+}
+
 static void
 do_init(event_t e)
 {
@@ -49,6 +57,12 @@ do_init(event_t e)
 
 	kprintf("LCPU %d DONE\n", lcpu_idx);
 	/* All initialzations are done */
+	if (lcpu_idx == 0)
+	{
+		event_open(&t.event, &init_eproc.event_pool, test_driver_os, NULL);
+		timer_open(&t, timer_tick + timer_freq * 20);
+	}
+	
 	init_finished = 1;
 }
 

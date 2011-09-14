@@ -30,11 +30,6 @@ lcpu_init(void)
 		if (cmpxchg32(&lcpu_init_count, old, old + 1) == old)
 			break;
 	}
-
-#if HAS_DRIVER_OS
-	/* XXX: spin for test */
-	while (1) ;
-#endif
 	
 	jump_kern();
 }

@@ -192,7 +192,11 @@ lcpu_idx_get(void)
 unsigned int
 lcpu_count_get(void)
 {
+#if HAS_DRIVER_OS
+	return sysconf.lcpu_count - 1;
+#else
 	return sysconf.lcpu_count;
+#endif
 }
 
 uintptr_t
@@ -202,6 +206,10 @@ hpet_phys_get(void)
 		return sysconf.hpet_phys;
 	else return 0;
 }
+
+#if HAS_DRIVER_OS
+EXPORT_SYMBOL(driver_os_notify);
+#endif
 
 EXPORT_SYMBOL(context_fill);
 EXPORT_SYMBOL(context_switch);

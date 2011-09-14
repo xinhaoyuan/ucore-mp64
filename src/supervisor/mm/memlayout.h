@@ -64,6 +64,8 @@
 
 /* RESERVED MEMORY FOR DRIVER OS */
 #define RESERVED_DRIVER_OS_SIZE 0x10000000
+/* Communicating buffer size, in pages  */
+#define DRIVER_OS_BUFFER_PSIZE  16
 
 /* *
  * * Virtual page table. Entry PGX[VPT] in the PGD (Page Global Directory) contains

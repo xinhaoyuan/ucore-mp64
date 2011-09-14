@@ -238,11 +238,17 @@ lapic_timer_set(uint32_t freq)
 int
 lapic_ipi_issue(int lapic_id)
 {
+	return lapic_ipi_issue_spec(lapic_id, T_IPI);
+}
+
+int
+lapic_ipi_issue_spec(int lapic_id, uint8_t vector)
+{
 	if (lapicr(ICRLO) & DELIVS)
 		return -1;
 
 	lapicw(ICRHI, lapic_id << 24);
-	lapicw(ICRLO, ASSERT | T_IPI);
+	lapicw(ICRLO, ASSERT | vector);
 
 	while (lapicr(ICRLO) & DELIVS) ;
 	return 0;
