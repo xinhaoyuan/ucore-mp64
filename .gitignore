@@ -1,4 +1,5 @@
 config.mk
+linux-src-link
 obj/*
 src/prebuilt/*
 !src/prebuilt/Makefile

@@ -14,16 +14,26 @@ override HAS_DRIVER_OS := y
 endif
 export HAS_DRIVER_OS
 
+ifeq (${BRANCH},linux-dos-module)
+all: ${T_OBJ}
+	${V}${MAKE} -f mk/mods.mk all
+else
 all: ${T_OBJ}
 	${V}${MAKE} -f mk/mods.mk all
 	${V}${MAKE} -f mk/image.mk all
+endif
 
 ${T_OBJ}:
 	@mkdir -p ${T_OBJ}
 
+ifeq (${BRANCH},linux-dos-module)
 clean:
-	-rm -rf ${T_OBJ}/*
-
+	${V}${MAKE} -C src/linux-dos-module clean
+	-${V}rm -rf ${T_OBJ}/*
+else
+clean:
+	-${V}rm -rf ${T_OBJ}/*
+endif
 
 qemu: all
 	${QEMU} -smp 4 -m 512 \

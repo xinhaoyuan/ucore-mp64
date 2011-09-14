@@ -12,9 +12,16 @@ ifeq (${BRANCH},river)
 MODS := libs-sv supervisor kern-river ht-sign ht-mksfs libs-user-ucore user-ucore bootloader
 endif
 
+ifeq (${BRANCH},linux-dos-module)
+MODS := linux-dos-module
+else
+
 ifeq (${HAS_DRIVER_OS},y)
 MODS := prebuilt ${MODS}
 endif
+
+endif
+
 
 MODDIRS := $(addprefix mod-,${MODS})
 
