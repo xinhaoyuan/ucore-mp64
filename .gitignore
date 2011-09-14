@@ -4,3 +4,11 @@ obj/*
 src/prebuilt/*
 !src/prebuilt/Makefile
 !src/prebuilt/README
+src/linux-dos-module/.*
+src/linux-dos-module/*.o
+src/linux-dos-module/dosm.ko
+src/linux-dos-module/dosm.mod.*
+src/linux-dos-module/modules.order
+src/linux-dos-module/Module.symvers
+
+
