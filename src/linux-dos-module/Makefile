@@ -1,7 +1,7 @@
 .PHONY: all clean
 
 obj-m     := dosm.o
-dosm-objs := dosm-init.o
+dosm-objs := dosm-init.o dosm-packet.o
 
 LINUX_BUILD ?= ${T_BASE}/linux-src-link
 

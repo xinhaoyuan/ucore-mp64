@@ -11,6 +11,7 @@
 #include <sysconf.h>
 #include <string.h>
 #include <console.h>
+#include <driver_os.h>
 
 kern_bootinfo_s kern_bootinfo;
 char     *kern_data;
@@ -209,6 +210,22 @@ hpet_phys_get(void)
 
 #if HAS_DRIVER_OS
 EXPORT_SYMBOL(driver_os_notify);
+
+volatile void *
+driver_os_buffer_get(void)
+{
+	return driver_os_buffer;
+}
+
+uint64_t
+driver_os_buffer_size_get(void)
+{
+	return driver_os_buffer_size;
+}
+
+EXPORT_SYMBOL(driver_os_buffer_get);
+EXPORT_SYMBOL(driver_os_buffer_size_get);
+
 #endif
 
 EXPORT_SYMBOL(context_fill);

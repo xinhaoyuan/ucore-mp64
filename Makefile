@@ -29,7 +29,7 @@ ${T_OBJ}:
 ifeq (${BRANCH},linux-dos-module)
 clean:
 	${V}${MAKE} -C src/linux-dos-module clean
-	-${V}rm -rf ${T_OBJ}/*
+	-${V}rm -rf ${T_OBJ}/dosm.ko
 else
 clean:
 	-${V}rm -rf ${T_OBJ}/*

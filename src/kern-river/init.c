@@ -12,6 +12,7 @@
 #include <drivers/rand.h>
 #include <drivers/pci.h>
 #include <proc/eproc.h>
+#include <proc/dos.h>
 
 PLS static event_s __init_event;
 PLS static eproc_s init_eproc;
@@ -37,12 +38,20 @@ ping_packet_back_handler(ipe_packet_t packet)
 
 #endif
 
+static event_s tdos;
 static timer_s t;
+
+static void
+test_driver_os_back(event_t event)
+{
+	/* SEND LOOP */
+	timer_open(&t, timer_tick + timer_freq * 1);
+}
 
 static void
 test_driver_os(event_t event)
 {
-	driver_os_notify();
+	dos_packet_send(&tdos, 0, 0, 0, 0, 0, 0);
 }
 
 static void
@@ -54,11 +63,13 @@ do_init(event_t e)
 
 	/* ipe init here is also an all lcpu barrier */
 	ipe_init();
+	dos_init();
 
 	kprintf("LCPU %d DONE\n", lcpu_idx);
 	/* All initialzations are done */
-	if (lcpu_idx == 0)
+	if (lcpu_idx == 1)
 	{
+		event_open(&tdos, &init_eproc.event_pool, test_driver_os_back, NULL);
 		event_open(&t.event, &init_eproc.event_pool, test_driver_os, NULL);
 		timer_open(&t, timer_tick + timer_freq * 20);
 	}

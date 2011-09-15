@@ -1,7 +1,7 @@
 .PHONY: all
 
 SRCFILES   := $(shell find . '(' '!' -regex '.*/_.*' ')' -and '(' -iname "*.c" -or -iname "*.S" ')' | sed -e 's!\./!!g') ../glue-kern/bootinfo.S
-T_CC_FLAGS :=	-I. -I../glue-kern -DLIBSPREFIX
+T_CC_FLAGS :=	-I. -I../glue-kern -I../linux-dos-module -DLIBSPREFIX
 # T_CC_OPT_FLAGS := -O2
 
 include ${T_BASE}/mk/compk.mk

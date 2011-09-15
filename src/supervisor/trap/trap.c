@@ -26,6 +26,7 @@ idt_init(void) {
     }
 	SETGATE(idt[T_SYSCALL], 0, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
 	SETGATE(idt[T_IPI], 0, GD_KTEXT, __vectors[T_IPI], DPL_USER);
+	SETGATE(idt[T_IPI_DOS], 0, GD_KTEXT, __vectors[T_IPI_DOS], DPL_USER);
     lidt(&idt_pd);
 }
 
@@ -149,7 +150,8 @@ trap_dispatch(struct trapframe *tf) {
 			}
 		}
 
-		if (tf->tf_trapno == T_IPI)
+		if (tf->tf_trapno == T_IPI ||
+			tf->tf_trapno == T_IPI_DOS)
 			lapic_eoi_send();
 	}
 }

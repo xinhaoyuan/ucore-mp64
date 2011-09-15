@@ -9,6 +9,7 @@
 #include <mp/mp.h>
 #include <debug/io.h>
 #include <proc/ipe.h>
+#include <proc/dos.h>
 
 PLS static uint64_t irq_mask;
 PLS static uint64_t irq_accumulate[IRQ_COUNT];
@@ -116,6 +117,10 @@ trap_dispatch(struct trapframe *tf)
 		case T_IPI:
 			event_activate(ipe_event);
 			break;
+
+		case T_IPI_DOS:
+			event_activate(dos_event);
+			break;
 		}
 	}
 }
@@ -131,6 +136,7 @@ trap_init(void)
 
 	intr_handler_set(T_SYSCALL, trap_dispatch);
 	intr_handler_set(T_IPI, trap_dispatch);
+	intr_handler_set(T_IPI_DOS, trap_dispatch);
 
 	irq_mask = 0;
 	for (i = 0; i != IRQ_COUNT; ++ i)

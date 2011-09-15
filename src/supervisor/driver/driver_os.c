@@ -80,7 +80,7 @@ driver_os_init(void)
 	snprintf(cmdline, CMDLINE_SIZE,
 			 "nosmp mem=%dM WITH_DOSM=y DOSM_BA=%p DOSM_BS=%d DOSM_IPIV=%d",
 			 RESERVED_DRIVER_OS_SIZE >> 20,
-			 PADDR_DIRECT(driver_os_buffer), driver_os_buffer_size, T_IPI);
+			 PADDR_DIRECT(driver_os_buffer), driver_os_buffer_size, T_IPI_DOS);
 	cmdline[CMDLINE_SIZE - 1] = 0;
 	strcpy(VADDR_DIRECT(0x1e000), cmdline);
 	

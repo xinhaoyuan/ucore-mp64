@@ -6,6 +6,7 @@
 /* Trap Numbers */
 #define T_SYSCALL               0x80
 #define T_IPI                   0x81
+#define T_IPI_DOS               0x82
 
 /* Processor-defined: */
 #define T_DIVIDE                0   // divide error
