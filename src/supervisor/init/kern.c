@@ -225,8 +225,18 @@ driver_os_buffer_size_get(void)
 
 EXPORT_SYMBOL(driver_os_buffer_get);
 EXPORT_SYMBOL(driver_os_buffer_size_get);
-
 #endif
+
+int
+driver_os_is_enabled(void)
+{
+#if HAS_DRIVER_OS
+	return 1;
+#else
+	return 0;
+#endif
+}
+EXPORT_SYMBOL(driver_os_is_enabled);
 
 EXPORT_SYMBOL(context_fill);
 EXPORT_SYMBOL(context_switch);

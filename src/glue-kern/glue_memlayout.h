@@ -28,8 +28,6 @@
 #define PBASE            0xFFFF900000000000
 #define PSIZE            0x0000400000000000          // the maximum amount of physical memory
 
-#define KBASE            0xFFFF800000000000
-
 #define KERNBASE         0xFFFFFFFF80000000
 
 /* *

@@ -1,18 +1,18 @@
-#include <proc/proc.h>
-#include <mp/mp.h>
-#include <drivers/timer.h>
-#include <drivers/hpet.h>
-#include <trap/trap.h>
-#include <mm/kmm.h>
-#include <glue_kio.h>
-#include <glue_intr.h>
 #include <debug/io.h>
-#include <glue_pmm.h>
-#include <proc/ipe.h>
-#include <drivers/rand.h>
+#include <drivers/hpet.h>
 #include <drivers/pci.h>
-#include <proc/eproc.h>
+#include <drivers/rand.h>
+#include <drivers/timer.h>
+#include <glue_intr.h>
+#include <glue_kio.h>
+#include <glue_pmm.h>
+#include <mm/kmm.h>
+#include <mp/mp.h>
 #include <proc/dos.h>
+#include <proc/eproc.h>
+#include <proc/ipe.h>
+#include <proc/proc.h>
+#include <trap/trap.h>
 
 PLS static event_s __init_event;
 PLS static eproc_s init_eproc;

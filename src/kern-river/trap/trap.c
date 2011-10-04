@@ -90,6 +90,9 @@ trap_dispatch(struct trapframe *tf)
 	}
 	else if (tf->tf_trapno < IRQ_OFFSET + IRQ_COUNT)
 	{
+		/* Firstly acknowledge the IRQ */
+		irq_ack(tf->tf_trapno - IRQ_OFFSET);
+		
 		/* IRQ */
 		int irq_no = tf->tf_trapno - IRQ_OFFSET;
 		irq_mask |= (1 << irq_no);
@@ -103,8 +106,6 @@ trap_dispatch(struct trapframe *tf)
 			
 			-- proc_current->irq_save_level;
 		}
-
-		irq_ack(tf->tf_trapno - IRQ_OFFSET);
 	}
 	else
 	{
@@ -129,6 +130,7 @@ int
 trap_init(void)
 {
 	int i;
+	/* 32 == exceptions range in x86_64 */
 	for (i = 0; i != 32; ++i)
 	{
 		intr_handler_set(i, trap_dispatch);

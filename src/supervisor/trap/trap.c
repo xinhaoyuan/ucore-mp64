@@ -119,8 +119,10 @@ print_regs(struct pushregs *regs) {
 
 static void
 trap_dispatch(struct trapframe *tf) {
-	int lcpu_id = lapic_id();
-	intr_handler_f h = lcpu_static[lcpu_id].intr_handler[tf->tf_trapno];
+	/* Should ensure that the kern handler should be the last func
+	 * call in the execution path, if there is a handler to call. */
+	int id = lapic_id();
+	intr_handler_f h = lcpu_static[id].intr_handler[tf->tf_trapno];
 	
 	if (tf->tf_trapno >= IRQ_OFFSET && tf->tf_trapno < IRQ_OFFSET + IRQ_COUNT)
 	{
@@ -133,12 +135,16 @@ trap_dispatch(struct trapframe *tf) {
 		}
 		else
 		{
-			if (h != NULL && lcpu_id == irq_control[tf->tf_trapno - IRQ_OFFSET].lcpu_apic_id)
+			if (h != NULL && id == irq_control[tf->tf_trapno - IRQ_OFFSET].lcpu_apic_id)
 				h(tf);
 		}
 	}
 	else
 	{
+		if (tf->tf_trapno == T_IPI ||
+			tf->tf_trapno == T_IPI_DOS)
+			lapic_eoi_send();
+
 		if (h != NULL)
 			h(tf);
 		else
@@ -149,10 +155,6 @@ trap_dispatch(struct trapframe *tf) {
 				panic("unexpected trap in kernel.\n");
 			}
 		}
-
-		if (tf->tf_trapno == T_IPI ||
-			tf->tf_trapno == T_IPI_DOS)
-			lapic_eoi_send();
 	}
 }
 

@@ -27,6 +27,7 @@ PLS static eproc_s dos_eproc;
 PLS static event_s __dos_event;
 PLS event_t dos_event = &__dos_event;
 PLS static timer_s dos_timer;
+PLS static int dos_enabled;
 
 static void
 dos_packet_handle(dosm_packet_t packet)
@@ -91,6 +92,9 @@ do_dos_scan(event_t e)
 int
 dos_init(void)
 {
+	dos_enabled = driver_os_is_enabled();
+	if (!dos_enabled) return -1;
+	
 	dos_buf = driver_os_buffer_get();
 	dos_buf_size = driver_os_buffer_size_get();
 	dos_packet_buf = (dosm_packet_t)dos_buf;
@@ -106,7 +110,7 @@ dos_init(void)
 	return 0;
 }
 
-int
+static int
 dos_packet_alloc(void)
 {
 	int retry;
@@ -129,6 +133,8 @@ dos_packet_alloc(void)
 int
 dos_packet_send(event_t e, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5)
 {
+	if (!dos_enabled) return -1;
+	
 	int idx = dos_packet_alloc();
 	if (idx == -1) return -1;
 
@@ -163,6 +169,8 @@ dos_packet_send(event_t e, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t
 int
 dos_packet_sendv(event_t e, uint64_t *args)
 {
+	if (!dos_enabled) return -1;
+	
 	int idx = dos_packet_alloc();
 	if (idx == -1) return -1;
 

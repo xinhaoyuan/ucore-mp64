@@ -23,7 +23,8 @@ driver_os_init(void)
 	while (lcpu_init_count < sysconf.lcpu_count - 2) ;
 	extern char _binary_bzImage_start[];
 	extern char _binary_bzImage_end[];
-
+	
+	/* Consider the boot protocal */
 	/* ALL THE MAGIC FROM BOOT.TXT */
 	struct {
 		uint8_t	setup_sects;
@@ -78,6 +79,7 @@ driver_os_init(void)
 #define CMDLINE_SIZE 400
 	char cmdline[CMDLINE_SIZE];
 	snprintf(cmdline, CMDLINE_SIZE,
+			 /* XXX magic cmdline */
 			 "nosmp mem=%dM WITH_DOSM=y DOSM_BA=%p DOSM_BS=%d DOSM_IPIV=%d",
 			 RESERVED_DRIVER_OS_SIZE >> 20,
 			 PADDR_DIRECT(driver_os_buffer), driver_os_buffer_size, T_IPI_DOS);
@@ -87,7 +89,7 @@ driver_os_init(void)
 	hdr = (void *)0x101F1;
 	hdr->type_of_loader = 0xFF;
 	hdr->loadflags = LOADED_HIGH | CAN_USE_HEAP;
-	// hdr->setup_move_size = !!!ignore
+	// hdr->setup_move_size = !!! ignored for high version boot protocal
 	hdr->ramdisk_size = 0;
 	hdr->cmd_line_ptr = 0x1e000;
 	hdr->heap_end_ptr = 0xe000 - 0x200;

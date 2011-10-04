@@ -13,9 +13,9 @@ ${T_OBJ}/bootsect: ${T_OBJ}/bootloader
 	${V}${OBJCOPY} -S -O binary $^ $@.original
 	@${T_OBJ}/tools-sign $@.original $@
 
-${T_OBJ}/bootloader: ${OBJFILES}
+${T_OBJ}/bootloader: ${OBJFILES} bootloader.ld
 	@echo LD $@
-	${V}${LD} -N -e start -Ttext 0x7C00 -o$@ $^
-	@${STRIP} -g -R .eh_frame $@
+	${V}${LD} -N -e start -Tbootloader.ld -o$@ ${OBJFILES}
+	${V}${STRIP} -g -R .eh_frame $@
 
 

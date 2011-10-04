@@ -1,9 +1,9 @@
+#include <glue_intr.h>
 #include <glue_mp.h>
 #include <glue_pmm.h>
-#include <glue_intr.h>
+#include <libs/string.h>
 #include <libs/x86.h>
 #include <libs/x86/bitsearch.h>
-#include <libs/string.h>
 #include <trap/trap.h>
 
 #include <mm/kmm.h>
