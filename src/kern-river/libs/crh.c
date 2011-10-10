@@ -4,7 +4,7 @@
 
 void crh_init(crh_t crh)
 {
-	 memset(crh, 0, sizeof(crh_t));
+	 memset(crh, 0, sizeof(crh_s));
 }
 
 static inline int
