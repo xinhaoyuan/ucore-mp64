@@ -1137,7 +1137,7 @@ check_mm_swap(void) {
     }
 
     exit_mmap(mm0);
-    for (i = 0; i < PGX(KBASE); i ++) {
+    for (i = 0; i < PGX(SVBASE); i ++) {
         assert(pgdir[i] == 0);
     }
 

@@ -25,6 +25,8 @@
 #define USER_DS     ((GD_UDATA) | DPL_USER)
 
 /* All physical memory mapped at this address */
+#define SVBASE           0xFFFF800000000000
+
 #define PBASE            0xFFFF900000000000
 #define PSIZE            0x0000400000000000          // the maximum amount of physical memory
 
