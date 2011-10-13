@@ -25,7 +25,8 @@ ${T_OBJ}/svsym.o: ${T_OBJ}/supervisor
 
 ${T_OBJ}/kern-svsym.S: ${T_OBJ}/svsym.o
 	@echo GEN $@
-	${V}echo ".data\n.align 8\n" > $@
+	${V}echo ".data" > $@
+	${V}echo ".align 8" >> $@
 	${V}objdump -t $< -j .text -j .rodata -j .data -j .bss \
 		| sed -n -e 's/^\([0-9a-f][0-9a-f]*\).* \([a-zA-Z0-9_][a-zA-Z0-9_]*\)$$/\2_ptr: .quad 0x\1/gp' \
 		| sed -e 's/__TO_EXPORT_\([a-zA-Z0-9_][a-zA-Z0-9_]*\).*/.global \1/g' >> $@
