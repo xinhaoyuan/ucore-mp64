@@ -4,6 +4,10 @@ ENTRY(start)
 SECTIONS {
     . = 0x7c00;
 
+    .entry : {
+		*bootasm.S.o*(.text .rodata .data)	
+    }
+
     .text : {
         *(.text)
     }
