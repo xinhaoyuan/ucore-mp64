@@ -1337,7 +1337,7 @@ init_main(void *arg) {
     kprintf("all user-mode processes have quit.\n");
     assert(initproc->cptr == kswapd && initproc->yptr == NULL && initproc->optr == NULL);
     assert(kswapd->cptr == NULL && kswapd->yptr == NULL && kswapd->optr == NULL);
-    assert(nr_process == 3);
+    assert(nr_process == 2 + lcpu_count);
     assert(nr_used_pages_store == nr_used_pages());
     assert(slab_allocated_store == slab_allocated());
     kprintf("init check memory pass.\n");

@@ -27,6 +27,8 @@ __kern_entry(void)
 	{
 		spinlock_acquire(&init_lock);
 		
+		pmm_init();
+		
 		pmm_init_ap();
 		slab_init();
 				
